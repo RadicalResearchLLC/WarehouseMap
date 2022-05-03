@@ -102,6 +102,7 @@ palette <- colorFactor( palette = c('Blue', 'Brown'),
                         levels = c('warehouse', 'industrial'))
 
 #str(parcels_join_yr)
+#Create leaflet map with legend 
 map1 <- leaflet(data = parcels_join_yr) %>%
   addTiles() %>%
   setView(lat = 33.92, lng = -117.30, zoom = 12) %>%
@@ -115,5 +116,4 @@ map1 <- leaflet(data = parcels_join_yr) %>%
 
 map1
 
-setwd(app_dir)
-save.image('.RData')
+
