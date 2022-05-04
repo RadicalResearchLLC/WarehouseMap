@@ -1,0 +1,13 @@
+name: WarehouseCITY
+title: WarehouseCITY
+username:
+account: radicalresearch
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6233082
+bundleId: 5870359
+url: https://radicalresearch.shinyapps.io/WarehouseCITY/
+when: 1651686204.83119
+lastSyncTime: 1651686204.83119
+asMultiple: FALSE
+asStatic: FALSE

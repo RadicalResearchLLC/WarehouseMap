@@ -34,7 +34,7 @@ library(htmltools)
 wd <- getwd()
 
 ###set data, app, and export subdirectories
-app_dir <- paste0(wd, '/Warehouse Map App')
+app_dir <- paste0(wd, '/WarehouseCITY')
 warehouse_dir <- paste0(wd, '/Warehouse_data')
 output_dir <- paste0(wd, '/exports_other')
 crest_dir <- paste0(warehouse_dir, '/CREST_tables.gdb')
@@ -170,30 +170,6 @@ rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels)
 setwd(app_dir)
 save.image('.RData')
 
-##FIXME - The map will be done in the app - this is just for testing purposes
-palette <- colorFactor( palette = c('Blue', 'Brown'),
-                        levels = c('warehouse', 'light industrial'))
 
-#str(parcels_join_yr)
-#Create leaflet map with legend 
-map1 <- leaflet(data = final_parcels) %>%
-  addTiles() %>%
-  setView(lat = 33.92, lng = -117.30, zoom = 12) %>%
-  addProviderTiles("Esri.WorldImagery", 
-                   group = 'Imagery') %>%
-  addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-                   #overlayGroups =c('Riverside', 'San Bernadino')
-                   ) %>%
-  addPolygons(color = ~palette(type), 
-              #group = 'Riverside',
-              label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class))
-              ) %>%
-  #addPolygons(data = SBD_warehouse_ltInd,
-  #            color = ~palette(type),
-  #            group = 'San Bernadino') %>%
-  addLegend(pal = palette, values = c('warehouse', 'light industrial'),
-            title = 'Parcel class') #%>%
-  
-map1
 
 
