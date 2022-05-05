@@ -17,6 +17,7 @@ library(tidyverse)
 library(janitor)
 #library(data.table)
 library(readxl)
+library(spdplyr)
 #library(lubridate)
 
 ##spatial libraries and visualization annotation
@@ -139,7 +140,7 @@ names(SBD_warehouse_ltInd)
 
 ##Note that we can always add other columns if they are useful for display 
 narrow_RivCo_parcels <- parcels_join_yr %>%
-  dplyr::select(APN, SHAPE_Area, class, type, SHAPE) %>%
+  dplyr::select(APN, SHAPE_Area, class, type, SHAPE, YEAR_BUILT) %>%
   clean_names() %>%
   st_cast(to = 'POLYGON') #%>%
 
@@ -154,22 +155,26 @@ narrow_RivCo_parcels <- rename_geometry(narrow_RivCo_parcels, 'geometry')
 names(narrow_RivCo_parcels)
   
 narrow_SBDCo_parcels <- SBD_warehouse_ltInd %>%
-  dplyr::select(APN, SHAPE_AREA, class, type, geometry) %>%
-  clean_names() #%>%
-  #st_cast(to = 'POLYGON')
-  
+  mutate(year_built = BASE_YEAR) %>%
+  dplyr::select(APN, SHAPE_AREA, class, type, geometry, year_built) %>%
+  clean_names() 
+
 str(narrow_RivCo_parcels)
 str(narrow_SBDCo_parcels)
 
-##FIXME do multipolygon and polygon sf geometries work together?
-final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels)
-str(final_parcels)
-  
+##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
+final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels) %>%
+  mutate(year_built = ifelse(year_built < 1776, 1776, year_built))
+#str(final_parcels)
+
+##Add variables for Heavy-duty diesel truck calculations
+Truck_trips_1000sqft <- 0.64
+DPM_VMT_2022_lbs <- 0.00037807
+
 ## Remove big raw files and save .RData file to app directory
 rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels)
 setwd(app_dir)
 save.image('.RData')
-
 
 
 
