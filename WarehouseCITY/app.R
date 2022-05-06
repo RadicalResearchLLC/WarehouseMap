@@ -17,46 +17,58 @@ library(sf)
 #library(rgdal)
 library(tidyverse)
 library(DT)
+library(markdown)
 #library(automap)
 #library(gstat)
 
-# Define UI for application that displays warehouses
+## Define UI for application that displays warehouses
+# Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
   tags$style(type="text/css", "div.info.legend.leaflet-control br {clear: both;}"),
     titlePanel(
-      fluidRow(column(4),
-               column(width =6,
-               div(style = 'height:60px; font-size: 50px;',
+      fluidRow(column(3),
+               column(6,
+               div(style = 'height:60px; font-size: 45px;',
                'Warehouse CITY')),
-               column(2, shiny::img(height = 30, src = 'Logo.png')))
+               column(1.5, shiny::img(height = 50, src = 'Logo-Redford_conservancy.jpg')),
+               column(1.5, shiny::img(height = 30, src = 'Logo.png')))
       ),
-
-    # Display map and bar chart
-    fluidRow(column(1),
-             column(4, sliderInput('year_slider', 'Year built', min(final_parcels$year_built), max(final_parcels$year_built), 
-             value = range(final_parcels$year_built), step = 1, sep =''), animate = TRUE),
-             column(7)
+  ##Create a tabset display to have a readme file and main warehouse page
+  tabsetPanel(
+    tabPanel('Dashboard',
+    # Display slider bar selections, checkbox, and summary text
+    fluidRow(column(1), 
+             column(3, sliderInput('year_slider', 'Year built', min = min(final_parcels$year_built), max(final_parcels$year_built), 
+             value = range(final_parcels$year_built), step = 1, sep ='')),
+             column(3, sliderInput('radius', 'Selection radius (km)', min = 1, max = 10, value = 5, step =1))
              ),
+    fluidRow(column(1),
+             column(4, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
+                                     value = TRUE))),
     fluidRow(column(12, textOutput('test'))),
     fluidRow(column(4, textOutput('text2'))),
+    # Display map and table
     fluidRow(
-        column(8, align = 'center', leafletOutput("map", height = 800)),
+        column(8, align = 'center', leafletOutput("map", height = 700)),
         column(4, align = 'center', dataTableOutput('warehouseDF'))
         ),
+    ),
+    tabPanel('Readme',
+      fluidRow(includeMarkdown("readme.md"))
+    )
+  )
   
 )
 
-# Define server logic required to draw a histogram
+
 server <- function(input, output) {
 
-# Filter data to only include subset from input menus  
-
-# color palettes and lists
+# color palettes 
   palette <- colorFactor( palette = c('Blue', 'Brown'),
                           levels = c('warehouse', 'light industrial'))
   
-  #str(parcels_join_yr)
-  #Create leaflet map with legend 
+
+#Create leaflet map with legend and layers control
   
 output$map <- renderLeaflet({
     map1 <- leaflet(data = final_parcels) %>%
@@ -78,45 +90,15 @@ output$map <- renderLeaflet({
     map1
     })
 
-filteredParcels <- reactive({
-     selectedYears <- final_parcels %>%
-       filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
-       mutate(shape_area = round(shape_area, 0))
-       
-})
-
-parcelDF1 <- reactive({
-  filteredParcels() %>%
-    as.data.frame() %>%
-    rename(parcel.number = apn, sq.ft = shape_area) %>%
-    dplyr::select(-geometry, -type) %>%
-    arrange(desc(sq.ft))
-})
-
-trip_length <- 50
-
-SumStats <- reactive({
-  parcelDF_circle() %>%
-    summarize(count = n(), sum.Sq.Ft. = round(sum(sq.ft), 0)) %>%
-    mutate(Truck.Trips = round(Truck_trips_1000sqft*sum.Sq.Ft./1000 ,0)) %>%
-    mutate(PoundsDiesel = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1))
-})
-
-output$test <- renderText({
-   paste('Your selection has', SumStats()$count, 'warehouses, summing to', SumStats()$sum.Sq.Ft,
-         'sq.ft. which resulted in an estimated', SumStats()$Truck.Trips, 'truck trips emitting', SumStats()$PoundsDiesel, 
-         'pounds of Diesel PM every day')
-         })
-
+#Observe leaflet proxy for layers that refresh (warehouses, circle)
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
       clearGroup(group = 'Warehouses') %>%
       addPolygons(color = ~palette(type), 
         group = 'Warehouses',
-        label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_built)) 
+        label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)) 
       )
 })
-
 observe({
   leafletProxy("map", data = circle()) %>%
     clearGroup(group = 'Circle') %>%
@@ -133,16 +115,29 @@ output$warehouseDF <- renderDataTable(
                  pageLength = 15) 
 )
 
-output$text2 <- renderText({
-  req(input$map_click)
-  paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
+## Reactive data selection logic
+
+# First select parcels based on checkbox and year range input
+
+filteredParcels <- reactive({
+  if(input$UnknownYr == TRUE) {
+    selectedYears <- final_parcels %>%
+      filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
+      mutate(shape_area = round(shape_area, 0))
+  } else {
+    selectedYears <- final_parcels %>%
+      filter(year.built != 'unknown') %>%
+      filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
+      mutate(shape_area = round(shape_area, 0))
+  }
+  return(selectedYears)
 })
 
 ##Calculate circle around a selected point
 circle <- reactive({
   req(input$map_click)
   #FIXME - make this user defined
-  distance <- 5000
+  distance <- input$radius*1000
   lat1 <- round(input$map_click$lat, 8)
   lng1 <- round(input$map_click$lng, 8)
   clickedCoords <- data.frame(lng1, lat1)
@@ -161,32 +156,52 @@ nearby_warehouses <- reactive({
   nearby2 <- filteredParcels()[nearby[[1]],] %>%
     as.data.frame() %>%
     rename(parcel.number = apn, sq.ft = shape_area) %>%
-    dplyr::select(-geometry, -type) %>%
+    dplyr::select(-geometry, -type, -year_built) %>%
     arrange(desc(sq.ft))
-    
+  
   return(nearby2)
 })
 
+##Select between data without selection radius or with
 parcelDF_circle <- reactive({
   if (is.null(input$map_click)) {
-  warehouse2 <- parcelDF1()
+    warehouse2 <- filteredParcels() %>%
+      as.data.frame() %>%
+      rename(parcel.number = apn, sq.ft = shape_area) %>%
+      dplyr::select(-geometry, -type, -year_built) %>%
+      arrange(desc(sq.ft))
   }
   else {
     warehouse2 <- nearby_warehouses() %>%
-      as.data.frame()# %>%
-      #rename(parcel.number = apn, sq.ft = shape_area) %>%
-     # dplyr::select(-geometry, -type) %>%
-     # arrange(desc(sq.ft))
+      as.data.frame()
   }
-  # warehouse2 <- filteredParcels() %>%
-  #    st_intersect(circle()) %>%
-  #   as.data.frame() %>%
-  #    rename(parcel.number = apn, sq.ft = shape_area) %>%
-  #   dplyr::select(-geometry, -type) %>%
-  #    arrange(desc(sq.ft))
-  #    warehouse2 <- parcelDF1()
-  #  } 
   return(warehouse2)
+})
+
+##Add variables for Heavy-duty diesel truck calculations
+Truck_trips_1000sqft <- 0.64
+DPM_VMT_2022_lbs <- 0.00037807
+trip_length <- 50
+
+## calculate summary stats and render text outputs
+
+
+SumStats <- reactive({
+  parcelDF_circle() %>%
+    summarize(count = n(), sum.Sq.Ft. = round(sum(sq.ft), 0)) %>%
+    mutate(Truck.Trips = round(0.65*Truck_trips_1000sqft*sum.Sq.Ft./1000 ,0)) %>%
+    mutate(PoundsDiesel = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1))
+})
+
+output$test <- renderText({
+  paste('Your selection has', SumStats()$count, 'warehouses, summing to', SumStats()$sum.Sq.Ft,
+        'sq.ft. which resulted in an estimated', SumStats()$Truck.Trips, 'truck trips emitting', SumStats()$PoundsDiesel, 
+        'pounds of Diesel PM every day')
+})
+
+output$text2 <- renderText({
+  req(input$map_click)
+  paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
 })
 
 }

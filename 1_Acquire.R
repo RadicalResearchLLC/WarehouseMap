@@ -44,7 +44,7 @@ SBD_parcel_dir <- paste0(warehouse_dir, '/SBD_Parcel')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
-#truckdata_dir <- paste0(wd, '/truck_data')
+truck_dir <- paste0(wd, '/TruckTrafficData')
 
 
 ## Acquire warehouse data files
@@ -164,7 +164,8 @@ str(narrow_SBDCo_parcels)
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
 final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels) %>%
-  mutate(year_built = ifelse(year_built < 1776, 1776, year_built))
+  mutate(year.built= ifelse(year_built < 1910, 'unknown',  year_built),
+         year_built = ifelse(year_built < 1910, 1910, year_built))
 #str(final_parcels)
 
 ##Add variables for Heavy-duty diesel truck calculations
@@ -175,6 +176,15 @@ DPM_VMT_2022_lbs <- 0.00037807
 rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels)
 setwd(app_dir)
 save.image('.RData')
+
+##import truck traffic data
+truckTraffic <- sf::st_read(dsn = truck_dir) %>%
+  mutate(TruckAADT = as.numeric(TruckAADT),
+         Lat_S_or_W = as.numeric(Lat_S_or_W),
+         Lat_N_or_E = as.numeric(Lat_N_or_E),
+         Lon_S_or_W = as.numeric(Lon_S_or_W),
+         Lon_N_or_E = as.numeric(Lon_N_or_E)) #%>% 
+ #st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")# %>%
 
 
 
