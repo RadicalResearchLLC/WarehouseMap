@@ -110,7 +110,7 @@ output$test <- renderText({
 
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
-      clearShapes() %>%
+      clearGroup(group = 'Warehouses') %>%
       addPolygons(color = ~palette(type), 
         group = 'Warehouses',
         label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_built)) 
