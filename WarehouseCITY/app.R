@@ -30,7 +30,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
                column(6,
                div(style = 'height:60px; font-size: 45px;',
                'Warehouse CITY')),
-               column(1.5, shiny::img(height = 50, src = 'Logo-Redford_conservancy.jpg')),
+               column(1.5, shiny::img(height = 50, src = 'Logo_Redford.jpg')),
                column(1.5, shiny::img(height = 30, src = 'Logo.png')))
       ),
   ##Create a tabset display to have a readme file and main warehouse page
