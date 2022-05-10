@@ -40,18 +40,25 @@ ui <- fluidPage(title = 'Warehouse CITY',
     fluidRow(column(1), 
              column(3, sliderInput('year_slider', 'Year built', min = min(final_parcels$year_built), max(final_parcels$year_built), 
              value = range(final_parcels$year_built), step = 1, sep ='')),
-             column(3, sliderInput('radius', 'Selection radius (km)', min = 1, max = 10, value = 5, step =1))
+             column(3, sliderInput('radius', 'Selection radius (km)', min = 1, max = 10, value = 5, step =1))#,
+             #column(3, checkboxInput('inputId' = 'DetailTable', label = 'Display detailed table of selected warehouses',
+              #  value = FALSE))
              ),
     fluidRow(column(1),
              column(4, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
-                                     value = TRUE))),
-    fluidRow(column(12, textOutput('test'))),
-    fluidRow(column(4, textOutput('text2'))),
+                value = TRUE))),
+    #fluidRow(column(12, textOutput('test'))),
+    fluidRow(column(3),
+             column(5, align = 'center', dataTableOutput('Summary'))
+             #column(3, textOutput('text2')),
+             ),
     # Display map and table
     fluidRow(
-        column(8, align = 'center', leafletOutput("map", height = 700)),
-        column(4, align = 'center', dataTableOutput('warehouseDF'))
+        column(1),
+        column(10, align = 'center', leafletOutput("map", height = 600))
         ),
+    fluidRow(column(3),
+             column(6, align = 'center', dataTableOutput('warehouseDF'))),
     ),
     tabPanel('Readme',
       fluidRow(includeMarkdown("readme.md"))
@@ -107,12 +114,15 @@ observe({
   })
 
 ## Generate a data table of warehouses in selected reactive data
-output$warehouseDF <- renderDataTable(
+output$warehouseDF <- DT::renderDataTable(
   parcelDF_circle(), 
+  server = FALSE,
   caption  = 'Warehouse list by parcel number, square footage, and year built',
   rownames = FALSE, 
-  options = list(dom = 'tp',
-                 pageLength = 15) 
+  options = list(dom = 'Btp',
+    pageLength = 15,
+    buttons = c('csv','excel')),
+  extensions = c('Buttons')
 )
 
 ## Reactive data selection logic
@@ -185,19 +195,20 @@ trip_length <- 50
 
 ## calculate summary stats and render text outputs
 
-
 SumStats <- reactive({
   parcelDF_circle() %>%
-    summarize(count = n(), sum.Sq.Ft. = round(sum(sq.ft), 0)) %>%
-    mutate(Truck.Trips = round(0.65*Truck_trips_1000sqft*sum.Sq.Ft./1000 ,0)) %>%
-    mutate(PoundsDiesel = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1))
+    summarize(Warehouses = n(), Total.Sq.Ft. = round(sum(sq.ft), 0)) %>%
+    mutate(Truck.Trips = round(0.65*Truck_trips_1000sqft*Total.Sq.Ft./1000 ,0)) %>%
+    mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1))
 })
 
-output$test <- renderText({
-  paste('Your selection has', SumStats()$count, 'warehouses, summing to', SumStats()$sum.Sq.Ft,
-        'sq.ft. which resulted in an estimated', SumStats()$Truck.Trips, 'truck trips emitting', SumStats()$PoundsDiesel, 
-        'pounds of Diesel PM every day')
-})
+##Display summary table
+output$Summary <- renderDataTable(
+  SumStats(), 
+  caption  = 'Summary of selected warehouse statistics',
+  rownames = FALSE, 
+  options = list(dom = '') 
+)
 
 output$text2 <- renderText({
   req(input$map_click)

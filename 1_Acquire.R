@@ -88,6 +88,35 @@ crest_property_slim <- crest_property %>%
   dplyr::select(PIN, YEAR_BUILT) %>%
   dplyr::distinct()
 
+crest_property_dups <- crest_property_slim %>%
+  select(PIN) %>%
+  group_by(PIN) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  left_join(crest_property_slim) %>%
+  mutate(unk = ifelse(is.na(YEAR_BUILT), 1,
+                ifelse(YEAR_BUILT < 1911, 1, 0))) %>%
+  filter(unk == 0) %>%
+  group_by(PIN) %>%
+  summarize(PIN, YEAR_BUILT = min(YEAR_BUILT), .groups = 'drop') %>%
+  unique()
+
+crest_property_dups2 <- crest_property_slim %>%
+  select(PIN) %>%
+  group_by(PIN) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  left_join(crest_property_dups) 
+
+crest_property_solo <- crest_property_slim %>%
+  dplyr::select(PIN) %>%
+  group_by(PIN) %>%
+  summarize(count = n(), .groups = 'drop') %>%
+  filter(count == 1) %>%
+  left_join(crest_property_slim)
+
+crest_property_tidy <- bind_rows(crest_property_solo, crest_property_dups2)
+
 ##filter on warehouses and light-industrial for Riverside County
 ##transform coordinates from Northing-Easting to Lat-Long
 parcels_warehouse <- parcels %>%
@@ -106,7 +135,7 @@ parcels_lightIndustry <- parcels %>%
 ##Create a type category for the warehouse and industrial designation parcels
 
 parcels_join_yr <- bind_rows(parcels_warehouse, parcels_lightIndustry) %>%
-  left_join(crest_property_slim, by =c('APN' = 'PIN')) %>%
+  left_join(crest_property_tidy, by =c('APN' = 'PIN')) %>%
   unique() %>%
   mutate(YEAR_BUILT = ifelse(is.na(YEAR_BUILT), 1776, YEAR_BUILT)) %>%
   mutate(type = as.factor(ifelse(str_detect(class, 'warehouse'), 'warehouse', 'light industrial')))
@@ -173,7 +202,8 @@ Truck_trips_1000sqft <- 0.64
 DPM_VMT_2022_lbs <- 0.00037807
 
 ## Remove big raw files and save .RData file to app directory
-rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels)
+rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
+   crest_property_dups, crest_property_dups2, crest_property_tidy)
 setwd(app_dir)
 save.image('.RData')
 
@@ -185,6 +215,24 @@ truckTraffic <- sf::st_read(dsn = truck_dir) %>%
          Lon_S_or_W = as.numeric(Lon_S_or_W),
          Lon_N_or_E = as.numeric(Lon_N_or_E)) #%>% 
  #st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")# %>%
+
+
+### Multi count parcel join fixed
+#multi_count_parcels <- final_parcels %>%
+#  as.data.frame() %>%
+#  select(apn, shape_area) %>%
+#  dplyr::group_by(apn, shape_area) %>%
+#  dplyr::summarize(count = n(), .groups = 'drop') %>%
+#  filter(count > 1) %>%
+#  left_join(final_parcels)
+
+#single_count_parcels <- final_parcels %>%
+#  as.data.frame() %>%
+#  select(apn, shape_area) %>%
+#  dplyr::group_by(apn, shape_area) %>%
+#  dplyr::summarize(count = n(), .groups = 'drop') %>%
+#  filter(count == 1) %>%
+  left_join(final_parcels)
 
 
 
