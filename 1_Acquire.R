@@ -41,6 +41,8 @@ output_dir <- paste0(wd, '/exports_other')
 crest_dir <- paste0(warehouse_dir, '/CREST_tables.gdb')
 parcel_dir <- paste0(warehouse_dir, '/ParcelAttributed.gdb')
 SBD_parcel_dir <- paste0(warehouse_dir, '/SBD_Parcel')
+OC_dir <- paste0(warehouse_dir, '/OC_parcels')
+LA_dir <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
@@ -65,6 +67,43 @@ setwd(warehouse_dir)
 #setwd(SBD_parcel_dir)
 #unzip('countywide_parcels_05_02_2022.zip')
 
+##Set minimum warehouse size for analysis in sq.ft.
+sq_ft_threshold <- 100000
+
+##Try to import LA County data
+sf::st_layers(dsn = LA_dir)
+LA_parcels <- sf::st_read(dsn = LA_dir, quiet = TRUE, type = 3)
+
+LA_100k_parcels <- LA_parcels %>%
+  filter(Shape_Area > sq_ft_threshold) 
+names(LA_100k_parcels)
+
+rm(ls = LA_parcels)
+memory.size()
+gc()
+
+LA_industrial_100k_parcels <- LA_100k_parcels %>%
+  filter(UseType == 'Industrial') %>%
+  mutate(type = ifelse(str_detect(str_to_lower(UseDescription), 'warehous'), 'warehouse', 
+                        ifelse(str_detect(str_to_lower(UseDescription), 'industrial'), 'industrial', 'other')
+                               )
+  ) %>%
+  select(APN, YearBuilt1, Shape_Area, type, Shape, UseDescription) %>%
+  filter(type %in% c('warehouse' #,'industrial'
+                     )) %>%
+  clean_names() %>%
+  mutate(year_built = as.numeric(year_built1),
+         class=use_description) %>%
+  mutate(year_built = ifelse(is.na(year_built), 1910, 
+                             ifelse(year_built < 1911, 1910, year_built))
+         ) %>%
+  select(apn, shape_area, class, type, year_built, Shape) %>%
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+
+
+#rm(ls = LA_100k_parcels)
+gc()
+
 ## List the GDB files
 sf::st_layers(dsn = crest_dir)
 sf::st_layers(dsn = parcel_dir)
@@ -79,8 +118,7 @@ sf::st_layers(dsn = SBD_parcel_dir)
 SBD_parcels <- sf::st_read(dsn=SBD_parcel_dir, quiet = TRUE, type = 3)
 class(st_geometry(SBD_parcels))
 
-##Set minimum warehouse size for analysis in sq.ft.
-sq_ft_threshold <- 100000
+
 
 ######Tidy up the data for use
 ##select just property number and year built for riverside county CREST
@@ -161,6 +199,13 @@ SBD_warehouse_ltInd <- inner_join(SBD_parcels, SBD_codes, by = c('TYPEUSE' = 'us
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") %>%
   mutate(type = as.factor(type))
 
+##Import OC data - current parcels are useless
+sf::st_layers(dsn = OC_dir)
+#OC_parcels <- sf::st_read(dsn=OC_dir, quiet = TRUE, type = 3)
+#class(st_geometry(OC_parcels))
+
+#FIXME - OC parcels are useless
+
 ##combine RivCo and SBDCo spatial data frames for display
 ##Select and rename columns to make everything match
 
@@ -188,32 +233,49 @@ narrow_SBDCo_parcels <- SBD_warehouse_ltInd %>%
   dplyr::select(APN, SHAPE_AREA, class, type, geometry, year_built) %>%
   clean_names() 
 
+## Remove big raw files and save .RData file to app directory
+
 str(narrow_RivCo_parcels)
 str(narrow_SBDCo_parcels)
+str(LA_industrial_100k_parcels)
+
+narrow_LA_parcels <- rename_geometry(LA_industrial_100k_parcels, 'geometry')
+
+rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
+   crest_property_dups, crest_property_dups2, crest_property_tidy) #%>%
+
+gc()
+memory.size()
+
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
-final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels) %>%
+final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA_parcels) %>%
   mutate(year.built= ifelse(year_built < 1910, 'unknown',  year_built),
          year_built = ifelse(year_built < 1910, 1910, year_built))
+
+summary_counts <- final_parcels %>%
+  as.data.frame() %>%
+  group_by(class, type) %>%
+  summarize(count = n(), .groups = 'drop')
+
+rm(ls = LA_100k_parcels, LA_industrial_100k_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels,
+   parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse)
 #str(final_parcels)
 
 ##Add variables for Heavy-duty diesel truck calculations
-Truck_trips_1000sqft <- 0.64
-DPM_VMT_2022_lbs <- 0.00037807
+#Truck_trips_1000sqft <- 0.64
+#DPM_VMT_2022_lbs <- 0.00037807
 
-## Remove big raw files and save .RData file to app directory
-rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
-   crest_property_dups, crest_property_dups2, crest_property_tidy)
 setwd(app_dir)
 save.image('.RData')
 
 ##import truck traffic data
-truckTraffic <- sf::st_read(dsn = truck_dir) %>%
-  mutate(TruckAADT = as.numeric(TruckAADT),
-         Lat_S_or_W = as.numeric(Lat_S_or_W),
-         Lat_N_or_E = as.numeric(Lat_N_or_E),
-         Lon_S_or_W = as.numeric(Lon_S_or_W),
-         Lon_N_or_E = as.numeric(Lon_N_or_E)) #%>% 
+#truckTraffic <- sf::st_read(dsn = truck_dir) %>%
+#  mutate(TruckAADT = as.numeric(TruckAADT),
+#         Lat_S_or_W = as.numeric(Lat_S_or_W),
+#         Lat_N_or_E = as.numeric(Lat_N_or_E),
+#        Lon_S_or_W = as.numeric(Lon_S_or_W),
+#         Lon_N_or_E = as.numeric(Lon_N_or_E)) #%>% 
  #st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")# %>%
 
 
@@ -232,7 +294,7 @@ truckTraffic <- sf::st_read(dsn = truck_dir) %>%
 #  dplyr::group_by(apn, shape_area) %>%
 #  dplyr::summarize(count = n(), .groups = 'drop') %>%
 #  filter(count == 1) %>%
-  left_join(final_parcels)
+#  left_join(final_parcels)
 
 
 
