@@ -165,9 +165,10 @@ nearby_warehouses <- reactive({
   nearby <- st_intersects(circle(), filteredParcels())
   nearby2 <- filteredParcels()[nearby[[1]],] %>%
     as.data.frame() %>%
-    rename(parcel.number = apn, sq.ft = shape_area) %>%
-    dplyr::select(-geometry, -type, -year_built) %>%
-    arrange(desc(sq.ft))
+    rename(parcel.number = apn) %>%
+    mutate(Thousand.sq.ft = round(floorSpace.th.sq.ft, 0)) %>%
+    dplyr::select(parcel.number, class, year.built, Thousand.sq.ft) %>%
+    arrange(desc(Thousand.sq.ft))
   
   return(nearby2)
 })
@@ -177,9 +178,10 @@ parcelDF_circle <- reactive({
   if (is.null(input$map_click)) {
     warehouse2 <- filteredParcels() %>%
       as.data.frame() %>%
-      rename(parcel.number = apn, sq.ft = shape_area) %>%
-      dplyr::select(-geometry, -type, -year_built) %>%
-      arrange(desc(sq.ft))
+      rename(parcel.number = apn) %>%
+      mutate(Thousand.sq.ft = round(floorSpace.th.sq.ft, 0)) %>%
+      dplyr::select(parcel.number, class, year.built, Thousand.sq.ft) %>%
+      arrange(desc(Thousand.sq.ft))
   }
   else {
     warehouse2 <- nearby_warehouses() %>%
@@ -189,17 +191,20 @@ parcelDF_circle <- reactive({
 })
 
 ##Add variables for Heavy-duty diesel truck calculations
-Truck_trips_1000sqft <- 0.64
+#Truck trips = WAIRE 100k sq.ft. number
+Truck_trips_1000sqft <- 0.67
 DPM_VMT_2022_lbs <- 0.00037807
+NOX_VMT_2022_lbs <- 0.01098794
 trip_length <- 50
 
 ## calculate summary stats and render text outputs
 
 SumStats <- reactive({
   parcelDF_circle() %>%
-    summarize(Warehouses = n(), Total.Sq.Ft. = round(sum(sq.ft), 0)) %>%
-    mutate(Truck.Trips = round(0.65*Truck_trips_1000sqft*Total.Sq.Ft./1000 ,0)) %>%
-    mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1))
+    summarize(Warehouses = n(), Total.Thousand.Sq.Ft. = round(sum(Thousand.sq.ft), 0)) %>%
+    mutate(Truck.Trips = round(Truck_trips_1000sqft*Total.Thousand.Sq.Ft. ,0)) %>%
+    mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
+           PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0)) 
 })
 
 ##Display summary table
@@ -214,6 +219,10 @@ output$text2 <- renderText({
   req(input$map_click)
   paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
 })
+
+#observeEvent(input$map_click, {
+#  reset()
+#})
 
 }
 # Run the application 

@@ -43,6 +43,7 @@ parcel_dir <- paste0(warehouse_dir, '/ParcelAttributed.gdb')
 SBD_parcel_dir <- paste0(warehouse_dir, '/SBD_Parcel')
 OC_dir <- paste0(warehouse_dir, '/OC_parcels')
 LA_dir <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
+AQMD_dir <- paste0(wd, '/SCAQMD_shp')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
@@ -239,7 +240,8 @@ str(narrow_RivCo_parcels)
 str(narrow_SBDCo_parcels)
 str(LA_industrial_100k_parcels)
 
-narrow_LA_parcels <- rename_geometry(LA_industrial_100k_parcels, 'geometry')
+narrow_LA_parcels <- rename_geometry(LA_industrial_100k_parcels, 'geometry') %>%
+  mutate(type = as.factor(type))
 
 rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
    crest_property_dups, crest_property_dups2, crest_property_tidy) #%>%
@@ -250,9 +252,14 @@ memory.size()
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
 final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA_parcels) %>%
-  mutate(year.built= ifelse(year_built < 1910, 'unknown',  year_built),
-         year_built = ifelse(year_built < 1910, 1910, year_built))
+  mutate(year.built= ifelse(year_built <= 1910, 'unknown', year_built),
+         year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
+  mutate(floorSpace.th.sq.ft = shape_area*0.65/1000) %>%
+  filter(floorSpace.th.sq.ft > 100)
 
+centroids <- final_parcels %>%
+  st_centroid()
+  
 summary_counts <- final_parcels %>%
   as.data.frame() %>%
   group_by(class, type) %>%
@@ -261,6 +268,11 @@ summary_counts <- final_parcels %>%
 rm(ls = LA_100k_parcels, LA_industrial_100k_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels,
    parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse)
 #str(final_parcels)
+
+sf::st_layers(dsn = AQMD_dir)
+
+AQMD_boundary <-  sf::st_read(dsn = AQMD_dir, quiet = TRUE, type = 3) %>%
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 ##Add variables for Heavy-duty diesel truck calculations
 #Truck_trips_1000sqft <- 0.64
