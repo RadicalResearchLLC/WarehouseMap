@@ -257,7 +257,28 @@ final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA
   mutate(year.built= ifelse(year_built <= 1910, 'unknown', year_built),
          year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
   mutate(floorSpace.th.sq.ft = shape_area*0.65/1000) %>%
-  filter(floorSpace.th.sq.ft > 100)
+  filter(floorSpace.th.sq.ft > 100) %>%
+  mutate(yr_bin = as.factor(case_when(
+  year_built == 1910 ~ 'unknown',
+  year_built < 1972 & year_built > 1910 ~ 'Before 1972',
+  year_built >= 1972 & year_built < 1982 ~ '1972 - 1981',
+  year_built >= 1982 & year_built < 1992 ~ '1982 - 1991',
+  year_built >= 1992 & year_built < 2002 ~ '1992 - 2001',
+  year_built >= 2002 & year_built < 2012 ~ '2002 - 2011',
+  year_built >= 2012 & year_built < 2022 ~ '2012 - 2021'
+)))
+
+final_parcels$yr_bin <- factor(final_parcels$yr_bin, 
+                                   levels = c(  'unknown',
+                                                'Before 1972',
+                                                '1972 - 1981',
+                                                '1982 - 1991',
+                                                '1992 - 2001',
+                                                '2002 - 2011',
+                                                '2012 - 2021' ))
+
+paletteYr <- colorFactor(palette = 'inferno',
+                       levels = final_parcels$yr_bin)
 
 centroids <- final_parcels %>%
   st_centroid()
@@ -275,6 +296,16 @@ sf::st_layers(dsn = AQMD_dir)
 
 AQMD_boundary <-  sf::st_read(dsn = AQMD_dir, quiet = TRUE, type = 3) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+
+##Import QA list of warehouses and non-warehouses 
+##FIXME - move this up for when we identify warehouses currently not on the list
+setwd(wd) 
+source('QA_list.R')
+
+final_parcels <- final_parcels %>%
+  filter(apn %ni% not_warehouse)
+centroids <- centroids %>%
+  filter(apn %ni% not_warehouse)
 
 ##Add variables for Heavy-duty diesel truck calculations
 #Truck_trips_1000sqft <- 0.64
@@ -306,6 +337,7 @@ save.image('.RData')
 #single_count_parcels <- final_parcels %>%
 #  as.data.frame() %>%
 #  select(apn, shape_area) %>%
+
 #  dplyr::group_by(apn, shape_area) %>%
 #  dplyr::summarize(count = n(), .groups = 'drop') %>%
 #  filter(count == 1) %>%

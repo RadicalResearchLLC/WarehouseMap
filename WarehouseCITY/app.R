@@ -26,12 +26,12 @@ library(markdown)
 ui <- fluidPage(title = 'Warehouse CITY',
   tags$style(type="text/css", "div.info.legend.leaflet-control br {clear: both;}"),
     titlePanel(
-      fluidRow(column(3),
-               column(6,
-               div(style = 'height:60px; font-size: 45px;',
+      fluidRow(column(2),
+               column(4,
+               div(style = 'height:60px; font-size: 30px;',
                'Warehouse CITY')),
-               column(1.5, shiny::img(height = 50, src = 'Logo_Redford.jpg')),
-               column(1.5, shiny::img(height = 30, src = 'Logo.png')))
+               column(2, shiny::img(height = 50, src = 'Logo_Redford.jpg')),
+               column(2, shiny::img(height = 30, src = 'Logo.png')))
       ),
   ##Create a tabset display to have a readme file and main warehouse page
   tabsetPanel(
@@ -46,18 +46,17 @@ ui <- fluidPage(title = 'Warehouse CITY',
              ),
     fluidRow(column(1),
              column(4, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
-                value = TRUE))),
-    #fluidRow(column(12, textOutput('test'))),
-    fluidRow(column(3),
+                value = TRUE)),
+             column(4, textOutput('text2'))),
+    fluidRow(column(2),
              column(5, align = 'center', dataTableOutput('Summary'))
-             #column(3, textOutput('text2')),
              ),
     # Display map and table
     fluidRow(
         column(1),
-        column(10, align = 'center', leafletOutput("map", height = 600))
+        column(8, align = 'center', leafletOutput("map", height = 600))
         ),
-    fluidRow(column(3),
+    fluidRow(column(2),
              column(6, align = 'center', dataTableOutput('warehouseDF'))),
     ),
     tabPanel('Readme',
@@ -80,28 +79,36 @@ server <- function(input, output) {
 output$map <- renderLeaflet({
     map1 <- leaflet(data = final_parcels) %>%
       addTiles() %>%
-      setView(lat = 34, lng = -117.30, zoom = 11) %>%
+      setView(lat = 34, lng = -117.60, zoom = 9) %>%
       addProviderTiles("Esri.WorldImagery", group = 'Imagery') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups =c('Warehouses', 'Circle', 'SCAQMD Boundary'),
+        overlayGroups =c('Warehouses', 'Circle', 'SCAQMD Boundary', 'light industry'),
         options = layersControlOptions(collapsed = FALSE)
         ) %>%
       #addPolygons(color = ~palette(type), 
       #  group = 'Warehouses',
       #  label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_built))
       #  ) %>%
-      addLegend(pal = palette, 
-        values = c('warehouse', 'light industrial'),
-        title = 'Parcel class') 
+      addLegend(pal = paletteYr, 
+        #values = c('warehouse', 'light industrial'),
+        values = c('Before 1972',
+                   '1972 - 1981',
+                   '1982 - 1991',
+                   '1992 - 2001',
+                   '2002 - 2011',
+                   '2012 - 2021',
+                   'unknown'),
+        title = 'Year Built')
+        #title = 'Parcel class') 
     
-    map1
+    map1 %>% hideGroup('light industry')
     })
 
 #Observe leaflet proxy for layers that refresh (warehouses, circle)
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
       clearGroup(group = 'Warehouses') %>%
-      addPolygons(color = ~palette(type), 
+      addPolygons(color = ~paletteYr(yr_bin), 
         group = 'Warehouses',
         label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)) 
       )
@@ -118,6 +125,16 @@ observe({
     clearGroup(group = 'SCAQMD boundary') %>%
     addPolygons(color = 'black', fillOpacity = 0.02,
                 group = 'SCAQMD boundary')
+})
+
+observe({
+  leafletProxy("map", data = filter(centroids, type == 'light industrial')) %>%
+    clearGroup(group = 'light industry') %>%
+    addCircleMarkers(color = 'red', 
+                     fillOpacity = 0.5, 
+                     stroke = 0.2,
+                     radius = 1,
+                     group = 'light industry')
 })
 
 ## Generate a data table of warehouses in selected reactive data
@@ -202,16 +219,18 @@ parcelDF_circle <- reactive({
 Truck_trips_1000sqft <- 0.67
 DPM_VMT_2022_lbs <- 0.00037807
 NOX_VMT_2022_lbs <- 0.01098794
+CO2_VMT_2022_lbs <- 4.21520828
 trip_length <- 50
 
-## calculate summary stats and render text outputs
+## calculate summary stats
 
 SumStats <- reactive({
   parcelDF_circle() %>%
     summarize(Warehouses = n(), Total.Thousand.Sq.Ft. = round(sum(Thousand.sq.ft), 0)) %>%
     mutate(Truck.Trips = round(Truck_trips_1000sqft*Total.Thousand.Sq.Ft. ,0)) %>%
     mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
-           PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0)) 
+           PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0),
+           PoundsCO2.perDay = round(trip_length*Truck.Trips*CO2_VMT_2022_lbs, 0)) 
 })
 
 ##Display summary table
@@ -225,18 +244,6 @@ output$Summary <- renderDataTable(
 output$text2 <- renderText({
   req(input$map_click)
   paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
-})
-
-grd_sf <- reactive({
-  AQMD_boundary %>% 
-    st_bbox() %>%
-    st_as_sfc() %>% 
-    st_make_grid(
-      cellsize = c(0.01, 0.01), # 0.0025 degree pixel size
-      what = "centers"
-    ) %>%
-    st_as_sf() %>%
-    cbind(., st_coordinates(.))
 })
 
 
