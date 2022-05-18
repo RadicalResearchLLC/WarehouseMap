@@ -1,4 +1,4 @@
-Warehouse City Documentation (alpha)
+Warehouse City Documentation (alpha v1.0 - released May 18, 2022)
 ===================================
 
 # Introduction
@@ -13,64 +13,70 @@ The slider with the year ranges from 1910 to 2021 allows a user to select parcel
 
 ### Selection Radius (km) slider 
 
-This slider allows the user to alter the default radius of a great circle for selecting nearby warehouses. Radius distance values are in kilometers. The selection works when the user left-clicks in the map.  This will make a gray circle appear.  Any warehouses in the map intersecting that circle are selected for the calculation.  Any warehouses outside the gray area are still displayed on the map.  The data table updates to only show the warehouses included in the selection (both circle and year range).  
+This slider allows the user to alter the default radius of a great circle for selecting nearby warehouses (and light industrial) parcels. Radius distance values are in kilometers. The selection works when the user left-clicks in the map.  This will make a gray circle appear.  Any warehouses in the map intersecting that circle are selected for the calculation.  Any warehouses outside the gray area are still displayed on the map.  The data table updates to only show the warehouses included in the selection (both circle and year range).  
 
-### Summary stats statement
+### Summary stats table
 
-Directly above the map is a text statement that says, "Your selection has X warehouses, summing to Y sq.ft. which resulted in an estimated Z truck trips emitting N pounds of diesel PM every day."  This statement reflects the currently selected data and updates if you change the clicked area in the map or the year range.  
+Directly above the map is a table that provides summary statistics for the selected warehouses. The summary table includes the number of warehouses, the sum of floor space in units of thousand square feet, the number of estimated truck trips, and an estimate of the diesel PM2.5 and NOx emissions from those truck trips. The table updates as the user selects different year ranges or clicks on different sections of the map.  The details on how these are calculated are discussed further in the methods section.
 
 ### Map
 
-The map navigates like a normal map. Blue and brown polygons indicate parcels classified by the county assessor's as a "warehouse" or 'light industrial' use, respectively.  At the top right of the map, the imagery can be switched between a basemap imagery and satellite imagery. Polygon overlays can be turned on or off by selecting the check boxes for warehouses and/or circle.  Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes.
+The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Blue and brown polygons indicate parcels classified by the county assessors as a "warehouse" or 'light industrial' use, respectively.  At the top right of the map, the imagery can be switched between a basemap imagery and satellite imagery. Polygon overlays can be turned on or off by selecting the check boxes for warehouses and/or circle.  Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes. Finally, the air district map is visible as a boundary overlay and is called SCAQMD Boundary.
 
-### Data table
+### Detailed warehouse data table
 
-The table indicates the assessor parcel number, sq.ft. area of the parcel, the class indicating the type of building use, and the year the building was constructed. These columns are by default sorted from largest sq.ft. descending.  Clicking on the arrows next to each column header allows the data to be resorted. The table updates every time the slider inputs for year range or the circle selection is updated.    
+The table indicates the assessor parcel number, class which describes the building land-use, the year the building was constructed, and an estimate of the indoor area in units of thousand square feet. These columns are by default sorted from largest area descending.  Clicking on the arrows next to each column header allows the data to be resorted. The table updates every time the slider inputs for year range or the circle selection is updated.    
 
 ## Data
 
 Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside and San Bernadino.
 * https://gis2.rivco.org/
 * ftp://gis1.sbcounty.gov/
+* https://egis-lacounty.hub.arcgis.com/datasets/lacounty::la-county-parcel-map-service/about
 
-Parcel shapefiles were obtained in May, 2022. Data from the County websites are provides 'as is' and have multiple limitations in their use for this application. Parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. Including only warehouse use codes excluded hundreds of known warehouses that are classified as light industrial or other use codes.  Both are shown and color-coded for ease of comparison and the Table allows a user to identify the use code of any individual selected parcel.  
+Parcel shapefiles were obtained in May, 2022. Data from the County websites are provides 'as is' and have multiple limitations in their use for this application. Parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. Including only warehouse use codes excluded hundreds of known warehouses that are classified as light industrial in Riverside and San Bernadino Counties.  Both are shown and color-coded for ease of comparison and the Table allows a user to identify the use code of any individual selected parcel.  
 
 ## Methods
 
-Parcel areas are currently used as reported in the assessor database. Warehouse footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage.
+Parcel areas are as reported in the assessor databases include total area indoors and outdoors. Warehouse building space footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage. We estimate the indoor floor space using a floor-area ratio of 0.65, which is consistent with current guidance for industrial zoning in some jurisdictions in Riverside County.
 
-Truck trip estimates are based on the Institute of Transportation Engineers 2016 Report, "High-Cube Warehouse Vehicle Trip Generation Analysis" available here http://www.aqmd.gov/home/rules-compliance/ceqa/air-quality-analysis-handbook/high-cube-warehouse. The alpha version of the dashboard uses the average estimate of 0.64 heavy duty truck trips per thousand sq.ft of building space. The assessor database sq.ft. for the parcel. We have applied a 0.65 multiplier to the parcel area to estimate the building area. 
+Truck trip estimates are based on South Coast Air Quality Management District indirect warehouse source rule requirements for warehouses greater than 100,000 sq.ft. without truck trip counts. Rule 2305 is here:
+http://www.aqmd.gov/docs/default-source/rule-book/reg-xxiii/r2305.pdf?sfvrsn=15
 
-Diesel particulate matter emissions are based on year 2022 EMFAC2007 (version 2.3) emission factors. Diesel PM2.5 emissions are 0.00037807 pounds per mile. Vehicle trips were multiplied by an average truck trip distance of 50 miles. The trip distance is purely arbitrary but is like an underestimate of trip distances to and from the Ports of Los Angeles/Long Beach.  
+The alpha version of the dashboard uses the default weighted truck tripe rate of 0.67 heavy duty truck trips per thousand sq.ft of building space from rule 2305.d.(C) As noted earlier, the assessor database sq.ft. for the parcel has a 0.65 multiplier to the parcel area to estimate the indoor building area. 
+
+Diesel particulate matter and NOx emissions are based on year 2022 EMFAC2007 (version 2.3) emission factors. Diesel PM2.5 emissions are 0.00037807 pounds per mile. NOx emissions are 0.01098794 pounds per mile. Vehicle trips were multiplied by an average truck trip distance of 50 miles. The trip distance is purely arbitrary but is likely an underestimate of trip distances to and from the Ports of Los Angeles/Long Beach for Inland Empire warehouses and an overestimate of trip distances for LA county warehouses.  
 
 The final code for calculating the selected warehouses square footage, truck trips, and diesel PM emissions is reproduced exactly below.
 
 ```{r}
 ##Add variables for Heavy-duty diesel truck calculations
-Truck_trips_1000sqft <- 0.64
+#Truck trips = WAIRE 100k sq.ft. number
+Truck_trips_1000sqft <- 0.67
 DPM_VMT_2022_lbs <- 0.00037807
+NOX_VMT_2022_lbs <- 0.01098794
 trip_length <- 50
 
 ## calculate summary stats and render text outputs
+
 SumStats <- reactive({
   parcelDF_circle() %>%
-    summarize(count = n(), sum.Sq.Ft. = round(sum(sq.ft), 0)) %>%
-    mutate(Truck.Trips = round(0.65*Truck_trips_1000sqft*sum.Sq.Ft./1000 ,0)) %>%
-    mutate(PoundsDiesel = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1))
+    summarize(Warehouses = n(), Total.Thousand.Sq.Ft. = round(sum(Thousand.sq.ft), 0)) %>%
+    mutate(Truck.Trips = round(Truck_trips_1000sqft*Total.Thousand.Sq.Ft. ,0)) %>%
+    mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
+           PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0)) 
 })
 
-output$test <- renderText({
-  paste('Your selection has', SumStats()$count, 'warehouses, summing to', SumStats()$sum.Sq.Ft,
-        'sq.ft. which resulted in an estimated', SumStats()$Truck.Trips, 'truck trips emitting', SumStats()$PoundsDiesel, 
-        'pounds of Diesel PM every day')
-})
 ```
 
 ## Limitations
 
-While the dataset is awesome, it does have a number of limitations.  Two key issues are actively being investigates.
-* Classification - warehouses and light industrial are large classes of parcels that include many different types of buildings.  This analyis tool is meant to specifically characterize warehouses.  However, in Riverside County, a very large fraction of all warehouses are classified as light industrial in the database.  While we faithfully represent what is in the assessor dataset, some of the parcels may be misclassified. We are actively working to improve the dataset to better represent the use of the building.
-* Duplicate records - some parcel numbers have multiple records which can lead to double-counting area, truck trips, and emissions.  We are working to clean up this issue and only use the earliest year-built record for any parcels which are otherwise identical for square footage and parcel number.  
+While the dataset is awesome, it does have a number of limitations.  Two key issues are actively being investigated.
+* Classification - warehouses and light industrial are large classes of parcels that include many different types of buildings.  This analysis tool is meant to specifically characterize warehouses.  However, in Riverside County, a very large fraction of all warehouses are classified as light industrial in the database.  While we faithfully represent what is in the assessor dataset, some of the parcels may be misclassified. We are actively working to improve the dataset to better represent the use of the building.
+* Duplicate records - some parcel numbers have multiple records for build year which can lead to double-counting area, truck trips, and emissions.  When duplicates occur, we are using the earliest build year from the parcel database which may not account for parcel modifications or expansions.  
+*Emissions calculations - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not available at the time but could be incorporated in later versions if a reliable dataset becomes available.
 
 
+## Contact 
 
+If you have questions or suggestions, please email mikem@radicalresearch.llc
