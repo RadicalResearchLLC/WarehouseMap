@@ -83,7 +83,7 @@ output$map <- renderLeaflet({
       setView(lat = 34, lng = -117.30, zoom = 11) %>%
       addProviderTiles("Esri.WorldImagery", group = 'Imagery') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups =c('Warehouses', 'Circle'),
+        overlayGroups =c('Warehouses', 'Circle', 'SCAQMD Boundary'),
         options = layersControlOptions(collapsed = FALSE)
         ) %>%
       #addPolygons(color = ~palette(type), 
@@ -112,6 +112,13 @@ observe({
     addPolygons(color = 'grey50',
                 group = 'Circle')
   })
+
+observe({
+  leafletProxy("map", data = AQMD_boundary) %>%
+    clearGroup(group = 'SCAQMD boundary') %>%
+    addPolygons(color = 'black', fillOpacity = 0.02,
+                group = 'SCAQMD boundary')
+})
 
 ## Generate a data table of warehouses in selected reactive data
 output$warehouseDF <- DT::renderDataTable(
@@ -220,9 +227,18 @@ output$text2 <- renderText({
   paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
 })
 
-#observeEvent(input$map_click, {
-#  reset()
-#})
+grd_sf <- reactive({
+  AQMD_boundary %>% 
+    st_bbox() %>%
+    st_as_sfc() %>% 
+    st_make_grid(
+      cellsize = c(0.01, 0.01), # 0.0025 degree pixel size
+      what = "centers"
+    ) %>%
+    st_as_sf() %>%
+    cbind(., st_coordinates(.))
+})
+
 
 }
 # Run the application 

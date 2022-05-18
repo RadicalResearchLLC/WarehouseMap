@@ -69,7 +69,7 @@ setwd(warehouse_dir)
 #unzip('countywide_parcels_05_02_2022.zip')
 
 ##Set minimum warehouse size for analysis in sq.ft.
-sq_ft_threshold <- 100000
+sq_ft_threshold <- 150000
 
 ##Try to import LA County data
 sf::st_layers(dsn = LA_dir)
@@ -226,13 +226,15 @@ rename_geometry <- function(g, name){
   st_geometry(g)=name
   g
 }
-narrow_RivCo_parcels <- rename_geometry(narrow_RivCo_parcels, 'geometry')
+narrow_RivCo_parcels <- rename_geometry(narrow_RivCo_parcels, 'geometry') %>%
+  mutate(county = 'Riverside')
 names(narrow_RivCo_parcels)
   
 narrow_SBDCo_parcels <- SBD_warehouse_ltInd %>%
   mutate(year_built = BASE_YEAR) %>%
   dplyr::select(APN, SHAPE_AREA, class, type, geometry, year_built) %>%
-  clean_names() 
+  clean_names() %>%
+  mutate(county = 'San Bernadino')
 
 ## Remove big raw files and save .RData file to app directory
 
@@ -241,7 +243,7 @@ str(narrow_SBDCo_parcels)
 str(LA_industrial_100k_parcels)
 
 narrow_LA_parcels <- rename_geometry(LA_industrial_100k_parcels, 'geometry') %>%
-  mutate(type = as.factor(type))
+  mutate(type = as.factor(type), county = 'Los Angeles')
 
 rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
    crest_property_dups, crest_property_dups2, crest_property_tidy) #%>%
@@ -280,7 +282,8 @@ AQMD_boundary <-  sf::st_read(dsn = AQMD_dir, quiet = TRUE, type = 3) %>%
 
 setwd(app_dir)
 save.image('.RData')
-
+setwd(warehouse_dir)
+save.image('.RData')
 ##import truck traffic data
 #truckTraffic <- sf::st_read(dsn = truck_dir) %>%
 #  mutate(TruckAADT = as.numeric(TruckAADT),
