@@ -48,7 +48,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
              column(4, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
                 value = TRUE)),
              column(4, textOutput('text2'))),
-    fluidRow(column(2),
+    fluidRow(column(1),
              column(5, align = 'center', dataTableOutput('Summary'))
              ),
     # Display map and table
@@ -82,37 +82,56 @@ output$map <- renderLeaflet({
       setView(lat = 34, lng = -117.60, zoom = 9) %>%
       addProviderTiles("Esri.WorldImagery", group = 'Imagery') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups =c('Warehouses', 'Circle', 'SCAQMD Boundary', 'light industry'),
+        overlayGroups = c('Warehouses', 'Size bins', 'Circle', 
+                          'SCAQMD boundary', 'light industry'),
         options = layersControlOptions(collapsed = FALSE)
-        ) %>%
-      #addPolygons(color = ~palette(type), 
-      #  group = 'Warehouses',
-      #  label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_built))
-      #  ) %>%
-      addLegend(pal = paletteYr, 
-        #values = c('warehouse', 'light industrial'),
-        values = c('Before 1972',
-                   '1972 - 1981',
-                   '1982 - 1991',
-                   '1992 - 2001',
-                   '2002 - 2011',
-                   '2012 - 2021',
-                   'unknown'),
-        title = 'Year Built')
-        #title = 'Parcel class') 
+        ) 
     
-    map1 %>% hideGroup('light industry')
+    map1 %>% hideGroup(c('light industry', 'SCAQMD boundary'))#, 'Warehouse Size')
     })
 
 #Observe leaflet proxy for layers that refresh (warehouses, circle)
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
       clearGroup(group = 'Warehouses') %>%
-      addPolygons(color = ~paletteYr(yr_bin), 
+      addPolygons(color = '#8D3312', 
         group = 'Warehouses',
+        weight = 3,
+        fillOpacity = 0.5,
         label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)) 
       )
 })
+
+OrBr <- c('beige' = '#EEE1B1',
+          'gold' = '#CF7820',
+          'carrot' = '#A94915',
+          'rust' = '#8D3312',
+          'brown' = '#5F1003')
+
+paletteSize <- colorFactor(OrBr,
+                 levels = c('Less than 100,000',  
+                            '100,000 to 250,000',
+                            '250,000 to 500,000',
+                            '500,000 to 1,000,000',
+                            '1,000,000+'), 
+                  reverse = FALSE)
+
+observe({
+  leafletProxy("map", data = final_parcels) %>%
+    clearGroup(group = 'Size bins') %>%
+    addPolygons(color = ~paletteSize(size_bin),
+                weight = 3,
+                fillOpacity = 0.8,
+                group = 'Size bins') %>%
+    addLegend(pal = paletteSize, 
+              values = c('Less than 100,000',  
+                         '100,000 to 250,000',
+                         '250,000 to 500,000',
+                         '500,000 to 1,000,000',
+                         '1,000,000+'),
+              title = 'Size bins (Sq.ft.)')
+})
+
 observe({
   leafletProxy("map", data = circle()) %>%
     clearGroup(group = 'Circle') %>%
@@ -123,17 +142,18 @@ observe({
 observe({
   leafletProxy("map", data = AQMD_boundary) %>%
     clearGroup(group = 'SCAQMD boundary') %>%
-    addPolygons(color = 'black', fillOpacity = 0.02,
+    addPolygons(color = 'black', 
+                fillOpacity = 0.02, 
+                weight = 3,
                 group = 'SCAQMD boundary')
 })
 
 observe({
-  leafletProxy("map", data = filter(centroids, type == 'light industrial')) %>%
+  leafletProxy("map", data = filter(final_parcels, type == 'light industrial')) %>%
     clearGroup(group = 'light industry') %>%
-    addCircleMarkers(color = 'red', 
-                     fillOpacity = 0.5, 
-                     stroke = 0.2,
-                     radius = 1,
+    addPolygons(color = 'orange', 
+                     fillOpacity = 0.02, 
+                     weight = 3,
                      group = 'light industry')
 })
 
@@ -190,9 +210,10 @@ nearby_warehouses <- reactive({
   nearby2 <- filteredParcels()[nearby[[1]],] %>%
     as.data.frame() %>%
     rename(parcel.number = apn) %>%
-    mutate(Thousand.sq.ft = round(floorSpace.th.sq.ft, 0)) %>%
-    dplyr::select(parcel.number, class, year.built, Thousand.sq.ft) %>%
-    arrange(desc(Thousand.sq.ft))
+    mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
+           acreage = round(shape_area/43560, 0)) %>%
+    dplyr::select(parcel.number, class, year.built, acreage, Sq.ft.) %>%
+    arrange(desc(Sq.ft.))
   
   return(nearby2)
 })
@@ -203,9 +224,11 @@ parcelDF_circle <- reactive({
     warehouse2 <- filteredParcels() %>%
       as.data.frame() %>%
       rename(parcel.number = apn) %>%
-      mutate(Thousand.sq.ft = round(floorSpace.th.sq.ft, 0)) %>%
-      dplyr::select(parcel.number, class, year.built, Thousand.sq.ft) %>%
-      arrange(desc(Thousand.sq.ft))
+      mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
+             acreage = round(shape_area/43560, 0)) %>%
+      dplyr::select(parcel.number, class, year.built, acreage, Sq.ft.) %>%
+      arrange(desc(Sq.ft.)) 
+      
   }
   else {
     warehouse2 <- nearby_warehouses() %>%
@@ -215,6 +238,7 @@ parcelDF_circle <- reactive({
 })
 
 ##Add variables for Heavy-duty diesel truck calculations
+
 #Truck trips = WAIRE 100k sq.ft. number
 Truck_trips_1000sqft <- 0.67
 DPM_VMT_2022_lbs <- 0.00037807
@@ -226,8 +250,9 @@ trip_length <- 50
 
 SumStats <- reactive({
   parcelDF_circle() %>%
-    summarize(Warehouses = n(), Total.Thousand.Sq.Ft. = round(sum(Thousand.sq.ft), 0)) %>%
-    mutate(Truck.Trips = round(Truck_trips_1000sqft*Total.Thousand.Sq.Ft. ,0)) %>%
+    summarize(Warehouses = n(), Warehouse.Acreage = round(sum(acreage), 0), 
+              Total.Bldg.Sq.ft. = round(sum(Sq.ft.), 0)) %>%
+    mutate(Truck.Trips = round(Truck_trips_1000sqft*0.001*Total.Bldg.Sq.ft. ,0)) %>%
     mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
            PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0),
            PoundsCO2.perDay = round(trip_length*Truck.Trips*CO2_VMT_2022_lbs, 0)) 

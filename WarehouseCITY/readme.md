@@ -1,4 +1,4 @@
-Warehouse City Documentation (alpha v1.0 - released May 18, 2022)
+Warehouse City Documentation (alpha v1.01 - released May 20, 2022)
 ===================================
 
 # Introduction
@@ -17,13 +17,13 @@ This slider allows the user to alter the default radius of a great circle for se
 
 ### Summary stats table
 
-Directly above the map is a table that provides summary statistics for the selected warehouses. The summary table includes the number of warehouses, the sum of floor space in units of thousand square feet, the number of estimated truck trips, and an estimate of the diesel PM2.5, NOx, and CO2 emissions from those truck trips. The table updates as the user selects different year ranges or clicks on different sections of the map.  The details on how these are calculated are discussed further in the methods section.
+Directly above the map is a table that provides summary statistics for the selected warehouses. The summary table includes the number of warehouses, the acreage of the warehouse footprints, the total building floor space in units of square feet, the number of estimated truck trips, and an estimate of the diesel PM2.5, NOx, and CO2 emissions from those truck trips. The table updates as the user selects different year ranges or clicks on different sections of the map.  The details on how these are calculated are discussed further in the methods section.
 
 ### Map
 
-The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Polygon colors indicate parcels year built ranges as listed in the assessor database. At the top right of the map, the imagery can be switched between a basemap imagery and satellite imagery. Polygon overlays can be turned on or off by selecting the check boxes for warehouses and/or circle.  Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes. Finally, the air district map is visible as a boundary overlay and is called SCAQMD Boundary.
+The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Polygon colors indicate parcels year built ranges as listed in the assessor database. At the top right of the map, the imagery can be switched between a basemap imagery and satellite imagery. Polygon overlays can be turned on or off by selecting the check boxes for warehouses, size bins, circle, SCAQMD boundary, and light industry. Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes. Size bins colors the warehouse polygons into four size bins. The air district map is visible as the SCAQMD boundary overlay.  Note that values are in Thousand square feet, so a value of 1,000+ TSF is over one million square feet of indoor floor space. 
 
-Land use classifications that contain the word 'warehouse' do not include a large number of warehouses, especially for the Riverside County dataset.  The checkbox for 'light industry' places a red circle on all parcels that were classified as light industry in the assessors land use categories. We are assuming that these are mostly warehouses based on visual inspection, but some parcels are likely misclassified as warehouses with this assumption.  This red circle overlay is off by default but can be switched on in the upper right menu.  
+Land use classifications that contain the word 'warehouse' do not include a large number of warehouses, especially for the Riverside County dataset.  The checkbox for 'light industry' places a orange polygon overlay on all parcels that were classified as light industry in the assessors land use categories. We are assuming that these are mostly warehouses based on visual inspection, but some parcels are likely misclassified as warehouses with this assumption.  This overlay is off by default but can be switched on in the upper right menu.  
 
 ### Detailed warehouse data table
 
@@ -31,16 +31,20 @@ The table indicates the assessor parcel number, class which describes the buildi
 
 ## Data
 
-Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside and San Bernadino.
+Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernadino, and Los Angeles.
 * https://gis2.rivco.org/
 * ftp://gis1.sbcounty.gov/
 * https://egis-lacounty.hub.arcgis.com/datasets/lacounty::la-county-parcel-map-service/about
+* Personal communications with staff at OC Public Works; https://www.ocpublicworks.com/
 
 Parcel shapefiles were obtained in May, 2022. Data from the County websites are provides 'as is' and have multiple limitations in their use for this application. Parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. Including only warehouse use codes excluded hundreds of known warehouses that are classified as light industrial in Riverside and San Bernadino Counties.  Both are shown and color-coded for ease of comparison and the Table allows a user to identify the use code of any individual selected parcel.
 
 ## Methods
 
-Parcel areas are as reported in the assessor databases include total area indoors and outdoors. Warehouse building space footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage. We estimate the indoor floor space using a floor-area ratio of 0.65, which is consistent with current guidance for industrial zoning in some jurisdictions in Riverside County.
+Warehouses were selected for display if their total parcel size was over 1 acre (43,560 sq. ft.). Light industrial type sites were selected for display if their total parcel size was over 150,000 sq.ft., as we
+tried to avoid including large numbers of very small sites that may confound the analysis.  
+
+Parcel areas as reported in the assessor databases include total area indoors and outdoors. Warehouse building space footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage. We estimate the indoor floor space using a floor-area ratio of 0.65, which is consistent with current guidance for industrial zoning in some jurisdictions in Riverside County.
 
 Truck trip estimates are based on South Coast Air Quality Management District indirect warehouse source rule requirements for warehouses greater than 100,000 sq.ft. without truck trip counts. Rule 2305 is here:
 http://www.aqmd.gov/docs/default-source/rule-book/reg-xxiii/r2305.pdf?sfvrsn=15
@@ -58,15 +62,15 @@ Truck_trips_1000sqft <- 0.67
 DPM_VMT_2022_lbs <- 0.00037807
 NOX_VMT_2022_lbs <- 0.01098794
 CO2_VMT_2022_lbs <- 4.21520828
-
 trip_length <- 50
 
 ## calculate summary stats
 
 SumStats <- reactive({
   parcelDF_circle() %>%
-    summarize(Warehouses = n(), Total.Thousand.Sq.Ft. = round(sum(Thousand.sq.ft), 0)) %>%
-    mutate(Truck.Trips = round(Truck_trips_1000sqft*Total.Thousand.Sq.Ft. ,0)) %>%
+    summarize(Warehouses = n(), Warehouse.Acreage = round(sum(acreage), 0), 
+              Total.Bldg.Sq.ft. = round(sum(Sq.ft.), 0)) %>%
+    mutate(Truck.Trips = round(Truck_trips_1000sqft*0.001*Total.Bldg.Sq.ft. ,0)) %>%
     mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
            PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0),
            PoundsCO2.perDay = round(trip_length*Truck.Trips*CO2_VMT_2022_lbs, 0)) 
@@ -76,10 +80,13 @@ SumStats <- reactive({
 
 ## Limitations
 
-While the dataset is awesome, it does have a number of limitations.  Two key issues are actively being investigated.
-* Classification - warehouses and light industrial are large classes of parcels that include many different types of buildings.  This analysis tool is meant to specifically characterize warehouses.  However, in Riverside County, a very large fraction of all warehouses are classified as light industrial in the database.  While we faithfully represent what is in the assessor dataset, some of the parcels may be misclassified. We are actively working to improve the dataset to better represent the use of the building.
+While the dataset is awesome, it does have a number of limitations.  Multiples issues are being investigated or quality assured as we work to improve the utility of this tool.
+* Classification - warehouses and light industrial are large classes of parcels that include many different types of buildings.  This analysis tool is meant to specifically characterize warehouses.  However, in Riverside and San Bernadino County, a very large fraction of all warehouses are not classified using the words 'warehouse', 'distribution', or 'storage' in the assessor descriptions.  Instead, many are classified as 'light industrial' and other similar terms in the database.  While we faithfully represent the description in the assessor dataset, some of the parcels may be misclassified to warehouse through our inclusion of these classified terms. We are actively working to improve the dataset to better represent the use of the building as we visually inspect the dataset and gain local on-the-ground knowledge on individual facilities.
 * Duplicate records - some parcel numbers have multiple records for build year which can lead to double-counting area, truck trips, and emissions.  When duplicates occur, we are using the earliest build year from the parcel database which may not account for parcel modifications or expansions.  
-*Emissions calculations - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not available at the time but could be incorporated in later versions if a reliable dataset becomes available.
+* Emissions calculations - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not available at the time but could be incorporated in later versions if a reliable dataset becomes available.
+* Orange County data is not directly from the assessor's office and is likely less reliable than the other three counties as a result.  
+* We are working to improve the parcel information for this entire dataset. If you have any information on individual parcels that you believe is currently misclassified, please contact us at the email below and we'll work to incorporate improvements.  
+* A large number (8,644) of sub 1-acre warehouses are excluded from this analysis as the application slows down significantly when displaying these micro-warehouses.  The total area of these warehouses is 1.7x10^8 sq.ft.  
 
 
 ## Contact 
