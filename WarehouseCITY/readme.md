@@ -1,4 +1,4 @@
-Warehouse City Documentation (alpha v1.01 - released May 20, 2022)
+Warehouse City Documentation (alpha v1.02 - released May 23, 2022)
 ===================================
 
 # Introduction
@@ -31,7 +31,9 @@ The table indicates the assessor parcel number, class which describes the buildi
 
 ## Data
 
-Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernadino, and Los Angeles.
+Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernadino, and Los Angeles. Orange County data assessor
+data is not publicly available and was obtained through personal communication with 
+OC public works and a specialized query of the SCAG dataset provided in May 2022.
 * https://gis2.rivco.org/
 * ftp://gis1.sbcounty.gov/
 * https://egis-lacounty.hub.arcgis.com/datasets/lacounty::la-county-parcel-map-service/about

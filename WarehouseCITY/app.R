@@ -26,12 +26,12 @@ library(markdown)
 ui <- fluidPage(title = 'Warehouse CITY',
   tags$style(type="text/css", "div.info.legend.leaflet-control br {clear: both;}"),
     titlePanel(
-      fluidRow(column(2),
-               column(4,
+      fluidRow(column(1),
+               column(3,
                div(style = 'height:60px; font-size: 30px;',
                'Warehouse CITY')),
-               column(2, shiny::img(height = 50, src = 'Logo_Redford.jpg')),
-               column(2, shiny::img(height = 30, src = 'Logo.png')))
+               column(2, shiny::img(height = 60, src = 'Logo_Redford.jpg')),
+               column(2, shiny::img(height = 38, src = 'Logo.png')))
       ),
   ##Create a tabset display to have a readme file and main warehouse page
   tabsetPanel(
@@ -87,7 +87,7 @@ output$map <- renderLeaflet({
         options = layersControlOptions(collapsed = FALSE)
         ) 
     
-    map1 %>% hideGroup(c('light industry', 'SCAQMD boundary'))#, 'Warehouse Size')
+    map1 %>% hideGroup(c('light industry', 'Size bins', 'SCAQMD boundary'))#, 'Warehouse Size')
     })
 
 #Observe leaflet proxy for layers that refresh (warehouses, circle)
@@ -261,7 +261,7 @@ SumStats <- reactive({
 ##Display summary table
 output$Summary <- renderDataTable(
   SumStats(), 
-  caption  = 'Summary of selected warehouse statistics',
+  caption  = 'This interactive map shows the logistics industry footprint in Los Angeles, Orange, Riverside, and San Bernadino Counties.  Zoom in and/or click an area to see specific community impacts. Summary statistics are estimates based on publicly available datasets. Please see Readme tab for more information on methods and data sources.',
   rownames = FALSE, 
   options = list(dom = '') 
 )
