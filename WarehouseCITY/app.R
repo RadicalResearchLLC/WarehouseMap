@@ -85,7 +85,14 @@ output$map <- renderLeaflet({
         overlayGroups = c('Warehouses', 'Size bins', 'Circle', 
                           'SCAQMD boundary', 'light industry'),
         options = layersControlOptions(collapsed = FALSE)
-        ) 
+        )  %>%
+      addLegend(pal = paletteSize, 
+                values = c('Less than 100,000',  
+                           '100,000 to 250,000',
+                           '250,000 to 500,000',
+                           '500,000 to 1,000,000',
+                           '1,000,000+'),
+                title = 'Size bins (Sq.ft.)')
     
     map1 %>% hideGroup(c('light industry', 'Size bins', 'SCAQMD boundary'))#, 'Warehouse Size')
     })
@@ -117,19 +124,12 @@ paletteSize <- colorFactor(OrBr,
                   reverse = FALSE)
 
 observe({
-  leafletProxy("map", data = final_parcels) %>%
+  leafletProxy("map", data = filteredParcels()) %>%
     clearGroup(group = 'Size bins') %>%
     addPolygons(color = ~paletteSize(size_bin),
                 weight = 3,
                 fillOpacity = 0.8,
-                group = 'Size bins') %>%
-    addLegend(pal = paletteSize, 
-              values = c('Less than 100,000',  
-                         '100,000 to 250,000',
-                         '250,000 to 500,000',
-                         '500,000 to 1,000,000',
-                         '1,000,000+'),
-              title = 'Size bins (Sq.ft.)')
+                group = 'Size bins')
 })
 
 observe({
@@ -244,18 +244,19 @@ Truck_trips_1000sqft <- 0.67
 DPM_VMT_2022_lbs <- 0.00037807
 NOX_VMT_2022_lbs <- 0.01098794
 CO2_VMT_2022_lbs <- 4.21520828
-trip_length <- 50
+trip_length <- 25
 
 ## calculate summary stats
 
 SumStats <- reactive({
   parcelDF_circle() %>%
-    summarize(Warehouses = n(), Warehouse.Acreage = round(sum(acreage), 0), 
-              Total.Bldg.Sq.ft. = round(sum(Sq.ft.), 0)) %>%
-    mutate(Truck.Trips = round(Truck_trips_1000sqft*0.001*Total.Bldg.Sq.ft. ,0)) %>%
-    mutate(PoundsDieselPM.perDay = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
-           PoundsNOx.perDay = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0),
-           PoundsCO2.perDay = round(trip_length*Truck.Trips*CO2_VMT_2022_lbs, 0)) 
+    summarize(Warehouses = n(), 'Warehouse Acreage' = round(sum(acreage), 0), 
+              Total.Bldg.Sq.ft = round(sum(Sq.ft.), 0)) %>%
+    mutate(Truck.Trips = round(Truck_trips_1000sqft*0.001*Total.Bldg.Sq.ft ,0)) %>%
+    mutate('Daily Diesel PM (pounds)' = round(trip_length*Truck.Trips*DPM_VMT_2022_lbs,1),
+           'Daily NOx (pounds)' = round(trip_length*Truck.Trips*NOX_VMT_2022_lbs, 0),
+           'Daily CO2 (pounds)' = round(trip_length*Truck.Trips*CO2_VMT_2022_lbs, 0)) %>%
+    rename('Warehouse floor space (Sq.Ft.)' = Total.Bldg.Sq.ft,  'Daily Truck trips' = Truck.Trips)
 })
 
 ##Display summary table
