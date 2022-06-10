@@ -2,7 +2,7 @@
 ## Authored by Mike McCarthy, Radical Research LLC
 ## Thanks to Sean Raffuse at UC Davis AQRC for help with the nearby intersection code for great circles 
 ## First created May, 2022
-## Last modified May, 2022
+## Last modified June, 2022
 #
 
 library(shiny)
@@ -38,20 +38,17 @@ ui <- fluidPage(title = 'Warehouse CITY',
     tabPanel('Dashboard',
     # Display slider bar selections, checkbox, and summary text
     fluidRow(column(1), 
-             column(3, sliderInput('year_slider', 'Year built', min = min(final_parcels$year_built), max(final_parcels$year_built), 
+             column(2, sliderInput('year_slider', 'Year built', min = min(final_parcels$year_built), max(final_parcels$year_built), 
              value = range(final_parcels$year_built), step = 1, sep ='')),
-             column(3, sliderInput('radius', 'Selection radius (km)', min = 1, max = 10, value = 5, step =1))#,
-             #column(3, checkboxInput('inputId' = 'DetailTable', label = 'Display detailed table of selected warehouses',
-              #  value = FALSE))
+             column(1, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
+                                     value = TRUE)),
+             column(2, sliderInput('radius', 'Selection radius (km)', min = 1, max = 10, value = 5, step =1)),
+             column(2, textOutput('text2'))
              ),
     fluidRow(column(1),
-             column(4, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
-                value = TRUE)),
-             column(4, textOutput('text2'))),
-    fluidRow(column(1),
-             column(5, align = 'center', dataTableOutput('Summary'))
+             column(8, align = 'center', dataTableOutput('Summary'))
              ),
-    # Display map and table
+        # Display map and table
     fluidRow(
         column(1),
         column(8, align = 'center', leafletOutput("map", height = 600))
@@ -60,7 +57,9 @@ ui <- fluidPage(title = 'Warehouse CITY',
              column(6, align = 'center', dataTableOutput('warehouseDF'))),
     ),
     tabPanel('Readme',
-      fluidRow(includeMarkdown("readme.md"))
+      div(style = 'width: 90%; margin: auto;',
+      fluidRow(includeMarkdown("readme.md")),
+      )
     )
   )
   
