@@ -44,11 +44,11 @@ SBD_parcel_dir <- paste0(warehouse_dir, '/SBD_Parcel')
 OC_dir <- paste0(warehouse_dir, '/OC_parcels')
 LA_dir <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
 AQMD_dir <- paste0(wd, '/SCAQMD_shp')
+city_dir <- paste0(wd, '/cities')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
 #truck_dir <- paste0(wd, '/TruckTrafficData')
-
 
 ## Acquire warehouse data files
 setwd(warehouse_dir)
@@ -164,7 +164,7 @@ parcels_join_yr <- bind_rows(parcels_warehouse, parcels_lightIndustry) %>%
   mutate(YEAR_BUILT = ifelse(is.na(YEAR_BUILT), 1776, YEAR_BUILT)) %>%
   mutate(type = as.factor(ifelse(str_detect(class, 'warehouse'), 'warehouse', 'light industrial')))
 
-##parse San Bernadino data codes
+##parse SBD data codes
 setwd(warehouse_dir)
 SBD_codes <- read_excel('Assessor Use Codes 05-21-2012.xls') %>%
   clean_names() %>%
@@ -256,7 +256,7 @@ rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_propert
    crest_property_dups, crest_property_dups2, crest_property_tidy, OC_parcels) #%>%
 
 gc()
-memory.size()
+#memory.size()
 
 #str(final_parcels)
 
@@ -273,11 +273,11 @@ final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA
   year_built >= 1982 & year_built < 1992 ~ '1982 - 1991',
   year_built >= 1992 & year_built < 2002 ~ '1992 - 2001',
   year_built >= 2002 & year_built < 2012 ~ '2002 - 2011',
-  year_built >= 2012 & year_built < 2022 ~ '2012 - 2021',
-  year_built == 1910 ~ 'Unknown'
+  year_built >= 2012 & year_built <= 2022 ~ '2012 - 2022',
+  year_built == 1910 ~ 'unknown'
 ))) %>%
   mutate(size_bin = as.factor(case_when(
-    floorSpace.sq.ft < 100000 ~ 'Less than 100,000',
+    floorSpace.sq.ft < 100000 ~ '28,000 to 100,000',
     floorSpace.sq.ft >= 100000 & floorSpace.sq.ft < 250000 ~ '100,000 to 250,000',
     floorSpace.sq.ft >=250000 & floorSpace.sq.ft < 500000 ~ '250,000 to 500,000',
     floorSpace.sq.ft >=500000 & floorSpace.sq.ft < 1000000 ~'500,000 to 1,000,000',
@@ -290,16 +290,16 @@ final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA
   
 
 final_parcels$yr_bin <- factor(final_parcels$yr_bin, 
-                                   levels = c(  'Unknown',
-                                                '1911 - 1972',
+                                   levels = c(  '1911 - 1972',
                                                 '1972 - 1981',
                                                 '1982 - 1991',
                                                 '1992 - 2001',
                                                 '2002 - 2011',
-                                                '2012 - 2021' ))
+                                                '2012 - 2022',
+                                                'unknown'))
 
 final_parcels$size_bin <- factor(final_parcels$size_bin,
-                                 levels = c('Less than 100,000',
+                                 levels = c('28,000 to 100,000',
                                    '100,000 to 250,000',
                                     '250,000 to 500,000',
                                     '500,000 to 1,000,000',
@@ -340,6 +340,21 @@ final_parcels <- final_parcels %>%
 #  filter(apn %ni% not_warehouse)
 
 gc()
+##Import and clean city boundary data
+setwd(city_dir)
+#sf::st_layers(dsn = city_dir)
+city_boundary <- sf::st_read(dsn = city_dir, quiet = TRUE, type = 3) %>%
+  clean_names() %>%
+  filter(county %ni% c('Ventura', 'Imperial')) %>%
+  select(city, county, geometry, acres, shapearea)
+
+city_names <- city_boundary %>%
+  dplyr::select(city) %>%
+  filter(city != 'Unincorporated') %>%
+  arrange(city)
+
+city_names$city
+
 ##Add variables for Heavy-duty diesel truck calculations
 #Truck_trips_1000sqft <- 0.64
 #DPM_VMT_2022_lbs <- 0.00037807
