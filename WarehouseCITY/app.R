@@ -43,7 +43,10 @@ ui <- fluidPage(title = 'Warehouse CITY',
              column(1, checkboxInput(inputId = 'UnknownYr', label = 'Display parcels with unknown year built information',
                                      value = TRUE)),
              column(2, sliderInput('radius', 'Selection radius (km)', min = 1, max = 10, value = 5, step =1)),
-             column(2, textOutput('text2'))
+             column(2, align = 'center', selectizeInput(inputId = 'City', label = 'Select a city',
+                choices = c('', city_names$city), options = list(maxItems = 1))
+             )
+             #column(2, textOutput('text2'))
              ),
     fluidRow(column(1),
              column(8, align = 'center', dataTableOutput('Summary'))
@@ -65,48 +68,31 @@ ui <- fluidPage(title = 'Warehouse CITY',
   
 )
 
-
 server <- function(input, output) {
 
-# color palettes 
-  palette <- colorFactor( palette = c('Blue', 'Brown'),
-                          levels = c('warehouse', 'light industrial'))
-  
 
 #Create leaflet map with legend and layers control
   
 output$map <- renderLeaflet({
-    map1 <- leaflet(data = final_parcels) %>%
+    map1 <- leaflet() %>%
       addTiles() %>%
-      setView(lat = 34, lng = -117.60, zoom = 9) %>%
+      setView(lat = 34, lng = -117.60, zoom = 10) %>%
       addProviderTiles("Esri.WorldImagery", group = 'Imagery') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups = c('Warehouses', 'Size bins', 'Circle', 
+        overlayGroups = c('Warehouses', 'City boundaries', 'Circle',  
                           'SCAQMD boundary', 'light industry'),
         options = layersControlOptions(collapsed = FALSE)
         )  %>%
       addLegend(pal = paletteSize, 
-                values = c('Less than 100,000',  
+                values = c('28,000 to 100,000',  
                            '100,000 to 250,000',
                            '250,000 to 500,000',
                            '500,000 to 1,000,000',
                            '1,000,000+'),
                 title = 'Size bins (Sq.ft.)')
     
-    map1 %>% hideGroup(c('light industry', 'Size bins', 'SCAQMD boundary'))#, 'Warehouse Size')
+    map1 %>% hideGroup(c('light industry', 'SCAQMD boundary'))#, 'Warehouse Size')
     })
-
-#Observe leaflet proxy for layers that refresh (warehouses, circle)
-observe({
-  leafletProxy("map", data = filteredParcels()) %>%
-      clearGroup(group = 'Warehouses') %>%
-      addPolygons(color = '#8D3312', 
-        group = 'Warehouses',
-        weight = 3,
-        fillOpacity = 0.5,
-        label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)) 
-      )
-})
 
 OrBr <- c('beige' = '#EEE1B1',
           'gold' = '#CF7820',
@@ -115,29 +101,21 @@ OrBr <- c('beige' = '#EEE1B1',
           'brown' = '#5F1003')
 
 paletteSize <- colorFactor(OrBr,
-                 levels = c('Less than 100,000',  
+                 levels = c('28,000 to 100,000',  
                             '100,000 to 250,000',
                             '250,000 to 500,000',
                             '500,000 to 1,000,000',
                             '1,000,000+'), 
                   reverse = FALSE)
 
-observe({
-  leafletProxy("map", data = filteredParcels()) %>%
-    clearGroup(group = 'Size bins') %>%
-    addPolygons(color = ~paletteSize(size_bin),
-                weight = 3,
-                fillOpacity = 0.8,
-                group = 'Size bins')
-})
-
+#Circle select
 observe({
   leafletProxy("map", data = circle()) %>%
     clearGroup(group = 'Circle') %>%
     addPolygons(color = 'grey50',
                 group = 'Circle')
   })
-
+#AQMD boundary
 observe({
   leafletProxy("map", data = AQMD_boundary) %>%
     clearGroup(group = 'SCAQMD boundary') %>%
@@ -146,14 +124,34 @@ observe({
                 weight = 3,
                 group = 'SCAQMD boundary')
 })
-
+#Light industry overlay
 observe({
-  leafletProxy("map", data = filter(final_parcels, type == 'light industrial')) %>%
+  leafletProxy("map", data = filter(filteredParcels(), type == 'light industrial')) %>%
     clearGroup(group = 'light industry') %>%
     addPolygons(color = 'orange', 
                      fillOpacity = 0.02, 
                      weight = 3,
                      group = 'light industry')
+})
+#City boundaries
+observe({
+  leafletProxy("map", data = selected_cities()) %>%
+    clearGroup(group = 'City boundaries') %>%
+    addPolygons(color = 'black',
+                fillOpacity = 0.02,
+                weight = 2,
+                group = 'City boundaries')
+})
+#Warehouse size bins
+observe({
+  leafletProxy("map", data = filteredParcels()) %>%
+    clearGroup(group = 'Warehouses') %>%
+    addPolygons(color =  '#A94915',
+                fillColor = ~paletteSize(size_bin),
+                weight = 2,
+                fillOpacity = 0.8,
+                group = 'Warehouses',
+                label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)))
 })
 
 ## Generate a data table of warehouses in selected reactive data
@@ -167,24 +165,39 @@ output$warehouseDF <- DT::renderDataTable(
     buttons = c('csv','excel')),
   extensions = c('Buttons')
 )
-
 ## Reactive data selection logic
-
 # First select parcels based on checkbox and year range input
-
-filteredParcels <- reactive({
+filteredParcels1 <- reactive({
   if(input$UnknownYr == TRUE) {
     selectedYears <- final_parcels %>%
-      filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
+      dplyr::filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
       mutate(shape_area = round(shape_area, 0))
   } else {
     selectedYears <- final_parcels %>%
-      filter(year.built != 'unknown') %>%
-      filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
+      dplyr::filter(year.built != 'unknown') %>%
+      dplyr::filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
       mutate(shape_area = round(shape_area, 0))
   }
   return(selectedYears)
 })
+#Select city boundaries 
+selected_cities <- reactive({
+  req(input$City)
+  dplyr::filter(city_names, city %in% input$City) %>% 
+    st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+})
+#Select warehouses within city
+filteredParcels <- reactive({
+  if(input$City == '') {
+    cityParcels <- filteredParcels1() 
+    }
+  else {
+    cityIntersect <- st_intersects(selected_cities(), filteredParcels1())
+    cityParcels <- filteredParcels1()[cityIntersect[[1]],] 
+  }
+  return(cityParcels)
+})
+
 
 ##Calculate circle around a selected point
 circle <- reactive({
@@ -239,10 +252,11 @@ parcelDF_circle <- reactive({
 ##Add variables for Heavy-duty diesel truck calculations
 
 #Truck trips = WAIRE 100k sq.ft. number
+#emissions per mile calculated from EMFAC 2022 SCAQMD VMT weighted heavy duty fleet
 Truck_trips_1000sqft <- 0.67
-DPM_VMT_2022_lbs <- 0.00037807
-NOX_VMT_2022_lbs <- 0.01098794
-CO2_VMT_2022_lbs <- 4.21520828
+DPM_VMT_2022_lbs <- 0.00005415206
+NOX_VMT_2022_lbs <- 0.006287505
+CO2_VMT_2022_lbs <- 3.380869
 trip_length <- 25
 
 ## calculate summary stats
@@ -266,10 +280,10 @@ output$Summary <- renderDataTable(
   options = list(dom = '') 
 )
 
-output$text2 <- renderText({
-  req(input$map_click)
-  paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
-})
+#output$text2 <- renderText({
+#  req(input$map_click)
+#  paste('You clicked on', round(input$map_click$lat,5), round(input$map_click$lng,5))
+#})
 
 
 }
