@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified June, 2022
+##Last modified July, 2022
 ##This script acquires and tidy parcel data for the app
 
 rm(list =ls()) # clear environment
@@ -173,10 +173,16 @@ SBD_codes <- read_excel('Assessor Use Codes 05-21-2012.xls') %>%
   mutate(type = case_when(
     str_detect(description, 'warehouse') ~ 'warehouse',
     str_detect(description, 'light industrial') ~'light industrial',
+    str_detect(description, 'flex') ~ 'warehouse',
+    str_detect(description, 'storage') ~ 'warehouse',
     TRUE ~ 'other'
   )) %>%
   filter(type %in% c('warehouse', 'light industrial'))  %>%
-  rename(class = description)
+  rename(class = description) %>%
+  filter(class %ni% c('retail warehouse', 'lumber storage', 'mini storage (public)',
+                      'storage yard', 'auto storage yard', 'boat storage yard', 
+                      'grain storage', 'potato storage', 'bulk fertilizer storage',
+                      'mini-storage warehouse')) #%>%
 
 ##Filter SBDCO data by warehouse and light industrial, filter by size threshold
 ##Fix coordinate projection

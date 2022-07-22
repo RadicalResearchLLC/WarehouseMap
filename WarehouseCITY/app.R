@@ -58,6 +58,8 @@ ui <- fluidPage(title = 'Warehouse CITY',
         ),
     fluidRow(column(2),
              column(6, align = 'center', dataTableOutput('warehouseDF'))),
+    fluidRow(column(9),
+             column(3, 'Warehouse CITY v1.06, July 22, 2022'))
     ),
     tabPanel('Readme',
       div(style = 'width: 90%; margin: auto;',
@@ -163,7 +165,8 @@ output$warehouseDF <- DT::renderDataTable(
   options = list(dom = 'Btp',
     pageLength = 15,
     buttons = c('csv','excel')),
-  extensions = c('Buttons')
+  extensions = c('Buttons'),
+  filter = list(position = 'top', clear = FALSE)
 )
 ## Reactive data selection logic
 # First select parcels based on checkbox and year range input
