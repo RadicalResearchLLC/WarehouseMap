@@ -59,7 +59,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
     fluidRow(column(2),
              column(6, align = 'center', dataTableOutput('warehouseDF'))),
     fluidRow(column(9),
-             column(3, 'Warehouse CITY v1.06, July 22, 2022'))
+             column(3, 'Warehouse CITY v1.07, July 25, 2022'))
     ),
     tabPanel('Readme',
       div(style = 'width: 90%; margin: auto;',
@@ -79,9 +79,10 @@ output$map <- renderLeaflet({
     map1 <- leaflet() %>%
       addTiles() %>%
       setView(lat = 34, lng = -117.60, zoom = 10) %>%
-      addProviderTiles("Esri.WorldImagery", group = 'Imagery') %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = 'Imagery') %>%
+      addProviderTiles(providers$OpenRailwayMap, group = 'Rail') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups = c('Warehouses', 'City boundaries', 'Circle',  
+        overlayGroups = c('Warehouses', 'City boundaries', 'Circle', 'Rail', 
                           'SCAQMD boundary', 'light industry'),
         options = layersControlOptions(collapsed = FALSE)
         )  %>%
@@ -93,7 +94,7 @@ output$map <- renderLeaflet({
                            '1,000,000+'),
                 title = 'Size bins (Sq.ft.)')
     
-    map1 %>% hideGroup(c('light industry', 'SCAQMD boundary'))#, 'Warehouse Size')
+    map1 %>% hideGroup(c('Rail', 'light industry', 'SCAQMD boundary'))#, 'Warehouse Size')
     })
 
 OrBr <- c('beige' = '#EEE1B1',

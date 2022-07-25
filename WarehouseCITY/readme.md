@@ -1,4 +1,4 @@
-Warehouse CITY Documentation (alpha v1.06 - released July 22, 2022)
+Warehouse CITY Documentation (alpha v1.07 - released July 25, 2022)
 ===================================
 
 # Introduction
@@ -26,7 +26,7 @@ Directly above the map is a table that provides summary statistics for the selec
 
 ### Map
 
-The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Polygon colors indicate parcels year built ranges as listed in the assessor database. At the top right of the map, the imagery can be switched between a Basemap and satellite imagery (Imagery). Polygon overlays can be turned on or off by selecting the check boxes for Warehouses, City boundaries, Circle, SCAQMD boundary, and light industry. Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). 
+The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Polygon colors indicate parcels year built ranges as listed in the assessor database. At the top right of the map, the imagery can be switched between a Basemap and satellite imagery (Imagery). Polygon overlays can be turned on or off by selecting the check boxes for Warehouses, City boundaries, Circle, Rail, SCAQMD boundary, and light industry. Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). The Rail layer indicates rail lines and railyards through the open source OpenRailwayMap providerTiles.  
 
 The checkbox for 'light industry' places a orange polygon overlay on all parcels that were classified as light industry in county assessors land use categories. We are assuming that these are mostly warehouses based on visual inspection, but some parcels are likely misclassified as warehouses with this assumption.  This overlay is off by default. The air district map is visible as the SCAQMD boundary overlay, and this overlay is also off by default.
 
