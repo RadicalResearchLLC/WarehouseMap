@@ -45,6 +45,7 @@ OC_dir <- paste0(warehouse_dir, '/OC_parcels')
 LA_dir <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
 AQMD_dir <- paste0(wd, '/SCAQMD_shp')
 city_dir <- paste0(wd, '/cities')
+calEJScreen_dir <- paste0(wd, '/calenviroscreen40')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
@@ -66,7 +67,6 @@ LA_100k_parcels <- LA_parcels %>%
 names(LA_100k_parcels)
 
 rm(ls = LA_parcels)
-memory.size()
 gc()
 
 #now misnamed - not 100k
@@ -93,8 +93,8 @@ LA_industrial_100k_parcels <- LA_100k_parcels %>%
 gc()
 
 ## List the GDB files
-sf::st_layers(dsn = crest_dir)
-sf::st_layers(dsn = parcel_dir)
+#sf::st_layers(dsn = crest_dir)
+#sf::st_layers(dsn = parcel_dir)
 
 ##Import parcels and property record files for Riverside County
 ##st_read(type=1) is attempting to create the same sfc type for both counties
@@ -162,7 +162,7 @@ parcels_join_yr <- bind_rows(parcels_warehouse, parcels_lightIndustry) %>%
   left_join(crest_property_tidy, by =c('APN' = 'PIN')) %>%
   unique() %>%
   mutate(YEAR_BUILT = ifelse(is.na(YEAR_BUILT), 1776, YEAR_BUILT)) %>%
-  mutate(type = as.factor(ifelse(str_detect(class, 'warehouse'), 'warehouse', 'light industrial')))
+  mutate(type = as.factor(ifelse(str_detect(class, 'warehouse'), 'warehouse', 'other')))
 
 ##parse SBD data codes
 setwd(warehouse_dir)
@@ -172,12 +172,12 @@ SBD_codes <- read_excel('Assessor Use Codes 05-21-2012.xls') %>%
          use_code = as.numeric(use_code)) %>%
   mutate(type = case_when(
     str_detect(description, 'warehouse') ~ 'warehouse',
-    str_detect(description, 'light industrial') ~'light industrial',
-    str_detect(description, 'flex') ~ 'warehouse',
-    str_detect(description, 'storage') ~ 'warehouse',
-    TRUE ~ 'other'
+    str_detect(description, 'light industrial') ~'other',
+    str_detect(description, 'flex') ~ 'other',
+    str_detect(description, 'storage') ~ 'other',
+    TRUE ~ 'Unselected'
   )) %>%
-  filter(type %in% c('warehouse', 'light industrial'))  %>%
+  filter(type %in% c('warehouse', 'other'))  %>%
   rename(class = description) %>%
   filter(class %ni% c('retail warehouse', 'lumber storage', 'mini storage (public)',
                       'storage yard', 'auto storage yard', 'boat storage yard', 
@@ -204,7 +204,7 @@ OC_parcels <- sf::st_read(dsn=OC_dir, quiet = TRUE, type = 3) %>%
 
 class <- c('commercial storage', 'open storage', 'wholesaling and warehousing',
                           'light industrial')
-type <- c('warehouse', 'warehouse', 'warehouse', 'light industrial')
+type <- c('other', 'other', 'warehouse', 'other')
 code_desc <- data.frame(lu_codes, class, type)
 
 ## Need to convert OC parcel data from XYZ polygon to XY polygon
@@ -262,7 +262,7 @@ rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_propert
    crest_property_dups, crest_property_dups2, crest_property_tidy, OC_parcels) #%>%
 
 gc()
-#memory.size()
+
 
 #str(final_parcels)
 
@@ -322,16 +322,16 @@ final_parcels$size_bin <- factor(final_parcels$size_bin,
 summary_counts <- final_parcels %>%
   as.data.frame() %>%
   group_by(class, type) %>%
-  summarize(count = n(), .groups = 'drop')
+  summarize(count = n(), summed = sum(floorSpace.sq.ft), .groups = 'drop')
 
 rm(ls = LA_100k_parcels, LA_industrial_100k_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels,
    parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels)
 #str(final_parcels)
 
-sf::st_layers(dsn = AQMD_dir)
+#sf::st_layers(dsn = AQMD_dir)
 
-AQMD_boundary <-  sf::st_read(dsn = AQMD_dir, quiet = TRUE, type = 3) %>%
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+#AQMD_boundary <-  sf::st_read(dsn = AQMD_dir, quiet = TRUE, type = 3) %>%
+#  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 ##Import QA list of warehouses and non-warehouses 
 ##FIXME - move this up for when we identify warehouses currently not on the list
@@ -361,9 +361,12 @@ city_names <- city_boundary %>%
 
 city_names$city
 
-##Add variables for Heavy-duty diesel truck calculations
-#Truck_trips_1000sqft <- 0.64
-#DPM_VMT_2022_lbs <- 0.00037807
+##Import CalEnviroScreen
+CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) %>%
+  filter(County %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) %>%
+  select(Tract, TotPop19, ApproxLoc, CIscoreP, CIscore, geometry) %>% 
+  filter(CIscoreP >= 75) %>% 
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 setwd(app_dir)
 save.image('.RData')
