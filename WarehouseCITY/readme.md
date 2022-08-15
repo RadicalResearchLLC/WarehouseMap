@@ -1,4 +1,4 @@
-Warehouse CITY Documentation (alpha v1.07 - released July 25, 2022)
+Warehouse CITY Documentation (alpha v1.08 - released August 15, 2022)
 ===================================
 
 # Introduction
@@ -10,7 +10,7 @@ https://www.latimes.com/opinion/story/2022-05-01/inland-empire-warehouse-growth-
 
 ### Year range slider and unknown year checkbox
 
-The slider with the year ranges from 1910 to 2022 allows a user to select parcels with identified build years within that range. Displayed years are included.  For example, if the user selects 2011 to 2021 all warehouses with build years in that range are selected and displayed on the map and data table. Note that approximately 490 parcels had unknown build years; those can be removed or added to any analysis with a checkbox button and are set as 1910 for selection purposes in the slider tool.  
+The slider with the year ranges from 1910 to 2022 allows a user to select parcels with identified build years within that range. Displayed years are included.  For example, if the user selects 2011 to 2021 all warehouses with build years in that range are selected and displayed on the map and data table. Note that approximately 490 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1910 for selection purposes in the slider tool.  
 
 ### Selection Radius (km) slider 
 
@@ -18,7 +18,7 @@ This slider allows the user to alter the default radius of a great circle for se
 
 ### Select a City Dropdown menu 
 
-This dropdown menu allows the user to select and display the city boundary of any one of the 174 in the four county region. City names are alphabetical and can be manually selected or typed into the box. Once selected, the city selection will filter the summary stats table and selection radius to only include warehouses within the selected city boundaries.  
+This dropdown menu allows the user to select and display the city boundary of any incorporated city in the four county region. City names are alphabetical and can be manually selected via dropdown or typed into the box. Once selected, the city selection will filter the summary stats table and selection radius to only include warehouses within the selected city boundaries. Cities can be "unselected" by deleting the city selection without pressing enter or by refreshing the app.  
 
 ### Summary stats table
 
@@ -26,24 +26,25 @@ Directly above the map is a table that provides summary statistics for the selec
 
 ### Map
 
-The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Polygon colors indicate parcels year built ranges as listed in the assessor database. At the top right of the map, the imagery can be switched between a Basemap and satellite imagery (Imagery). Polygon overlays can be turned on or off by selecting the check boxes for Warehouses, City boundaries, Circle, Rail, SCAQMD boundary, and light industry. Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and light industry that are cumulatively affecting the selected area's air quality and truck traffic volumes. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). The Rail layer indicates rail lines and railyards through the open source OpenRailwayMap providerTiles.  
+The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left. Polygon colors indicate parcels year built ranges as listed in the assessor database. At the top right of the map, the imagery can be switched between a basemap and satellite imagery (Imagery). Polygon overlays can be turned on or off by selecting the check boxes for Warehouses, City boundaries, Circle, Rail, CalEnviroScreen, and Other parcel type. Clicking within the map draws a gray circle of radius (selection radius (km)).  This circle is used to identify nearby warehouses and likely warehouses (other parcel type) that are cumulatively affecting the selected area's air quality and truck traffic volumes. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). The Rail layer indicates rail lines and railyards through the open source OpenRailwayMap providerTiles.   
 
-The checkbox for 'light industry' places a orange polygon overlay on all parcels that were classified as light industry in county assessors land use categories. We are assuming that these are mostly warehouses based on visual inspection, but some parcels are likely misclassified as warehouses with this assumption.  This overlay is off by default. The air district map is visible as the SCAQMD boundary overlay, and this overlay is also off by default.
+The check box for 'Other parcel type' places a orange polygon overlay on all parcels that were classified as parcel types in county assessors land use categories that are likely warehouses but may be some non-warehouse land-use. We assume that these are mostly warehouses based on visual inspection of these parcels, but some parcels are likely misclassified as warehouses.  This overlay is off by default. 
+
+The CalEnviroScreen overlay provides a color-coded overlay of census tracts that are in the top 25% of disproportionately impacted tracts in the state. These scores are based on the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40). Darker colors indicate higher impact of pollution and/or socioeconomic disadvantage. Mousing over census tracts displays the census tract number, population, and score (0-100). 
 
 ### Detailed warehouse table
 
-This table below the map provides individual parcel information on selected warehouses from the map.  The table columns indicate the assessor parcel number, class which describes the building land-use, the year the building was constructed, the building footprint in acres, and an estimate of the indoor floor space area in units of  square feet. These columns are by default sorted from largest area descending.  Clicking on the arrows next to each column header allows the data to be resorted. The table updates as user selections are changed. Typing into the boxes above the table allows one to filter the selection for different classifications; these table filter options do not update the map.   
+This table below the map provides individual parcel information on selected warehouses from the map.  The table columns indicate the assessor parcel number, class which describes the building land-use, the land-use type as classified for display in the "other parcel type" overlay, the year the building was constructed, the building footprint in acres, and an estimate of the indoor floor space area in units of  square feet. These columns are by default sorted from largest area descending.  Clicking on the arrows next to each column header allows the data to be resorted. The table updates as user selections are changed. Typing into the boxes above the table allows one to filter the selection for different classifications; these table filter options do not update the map.   
 
 # Data
 
-Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernardino, and Los Angeles. Orange County data assessor data is not publicly available and was obtained through personal communication with 
-OC public works and a specialized query of the SCAG dataset provided in May 2022.
+Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernardino, and Los Angeles. Orange County data assessor data is not publicly available and was obtained through personal communication with OC public works and a specialized query of the SCAG dataset provided in May 2022.
 * https://gis2.rivco.org/
 * ftp://gis1.sbcounty.gov/
 * https://egis-lacounty.hub.arcgis.com/datasets/lacounty::la-county-parcel-map-service/about
 * Personal communications with staff at OC Public Works; https://www.ocpublicworks.com/
 
-Parcel shapefiles were obtained July 21, 2022 for Riverside and San Bernardino County, May 13, 2022 for LA County, and May 18, 2022 for Orange County. Data from the County websites are provides 'as is' and have multiple limitations in their use for this application. Parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. The light industry toggle overlays an orange border for ease of comparison and the detailed warehouse table below the map allows a user to identify the use code of any individual selected parcel.
+Parcel shapefiles were obtained August 11, 2022 for Riverside, San Bernardino County, and LA County, and May 18, 2022 for Orange County. Data from the County websites are provides 'as is' and have multiple limitations in their use for this application. Parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. The light industry toggle overlays an orange border for ease of comparison and the detailed warehouse table below the map allows a user to identify the use code of any individual selected parcel.
 
 Emissions factor for diesel vehicles were generated from a VMT weighted calculation of EMFAC2021 based on fleet specific data for 2022 downloaded from https://arb.ca.gov/emfac/ 
 
@@ -104,4 +105,4 @@ While the dataset is awesome, it does have a number of limitations.  Multiples i
 
 If you have questions or suggestions, please email mikem@radicalresearch.llc
 
-Interested in supporting local organizations working on land-use issues. Please visit the [Redford Conservancy](https://www.pitzer.edu/redfordconservancy/) or [Riverside Neighbors Opposing Warehouses](https://tinyurl.com/RIVNOW).
+If you are interested in supporting local organizations working on land-use issues, please visit the [Redford Conservancy](https://www.pitzer.edu/redfordconservancy/) and/or [Riverside Neighbors Opposing Warehouses](https://tinyurl.com/RIVNOW).

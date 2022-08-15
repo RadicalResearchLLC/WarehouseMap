@@ -2,7 +2,7 @@
 ## Authored by Mike McCarthy, Radical Research LLC
 ## Thanks to Sean Raffuse at UC Davis AQRC for help with the nearby intersection code for great circles 
 ## First created May, 2022
-## Last modified June, 2022
+## Last modified August, 2022
 #
 
 library(shiny)
@@ -59,8 +59,10 @@ ui <- fluidPage(title = 'Warehouse CITY',
     fluidRow(column(2),
              column(6, align = 'center', dataTableOutput('warehouseDF'))),
     fluidRow(column(9),
-             column(3, 'Warehouse CITY v1.07, July 25, 2022'))
-    ),
+             column(3, paste('Warehouse CITY v1.08, last updated', Sys.Date())
+                    )
+    )
+  ),
     tabPanel('Readme',
       div(style = 'width: 90%; margin: auto;',
       fluidRow(includeMarkdown("readme.md")),
@@ -82,8 +84,9 @@ output$map <- renderLeaflet({
       addProviderTiles(providers$Esri.WorldImagery, group = 'Imagery') %>%
       addProviderTiles(providers$OpenRailwayMap, group = 'Rail') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups = c('Warehouses', 'City boundaries', 'Circle', 'Rail', 
-                          'SCAQMD boundary', 'light industry'),
+        overlayGroups = c('Warehouses', 'City boundaries', 'Circle', 
+                          'CalEnviroScreen', 'Rail', 
+                          'Other parcel types'), # 'SCAQMD boundary',
         options = layersControlOptions(collapsed = FALSE)
         )  %>%
       addLegend(pal = paletteSize, 
@@ -94,7 +97,7 @@ output$map <- renderLeaflet({
                            '1,000,000+'),
                 title = 'Size bins (Sq.ft.)')
     
-    map1 %>% hideGroup(c('Rail', 'light industry', 'SCAQMD boundary'))#, 'Warehouse Size')
+    map1 %>% hideGroup(c('Rail', 'CalEnviroScreen', 'Other parcel types'))#, 'Warehouse Size', 'SCAQMD boundary')
     })
 
 OrBr <- c('beige' = '#EEE1B1',
@@ -119,22 +122,23 @@ observe({
                 group = 'Circle')
   })
 #AQMD boundary
-observe({
-  leafletProxy("map", data = AQMD_boundary) %>%
-    clearGroup(group = 'SCAQMD boundary') %>%
-    addPolygons(color = 'black', 
-                fillOpacity = 0.02, 
-                weight = 3,
-                group = 'SCAQMD boundary')
-})
+#observe({
+#  leafletProxy("map", data = AQMD_boundary) %>%
+#    clearGroup(group = 'SCAQMD boundary') %>%
+#    addPolygons(color = 'black', 
+#                fillOpacity = 0.02, 
+#                weight = 3,
+#                group = 'SCAQMD boundary')
+#})
 #Light industry overlay
 observe({
-  leafletProxy("map", data = filter(filteredParcels(), type == 'light industrial')) %>%
-    clearGroup(group = 'light industry') %>%
+  leafletProxy("map", data = filter(filteredParcels(), type == 'other')) %>%
+    clearGroup(group = 'Other parcel types') %>%
     addPolygons(color = 'orange', 
-                     fillOpacity = 0.02, 
-                     weight = 3,
-                     group = 'light industry')
+                  fillOpacity = 0, 
+                  weight = 2,
+                  group = 'Other parcel types',
+                  label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)))
 })
 #City boundaries
 observe({
@@ -145,6 +149,22 @@ observe({
                 weight = 2,
                 group = 'City boundaries')
 })
+#CalEnviroScreen4.0 census tracts
+qpal <- colorQuantile('magma', CalEJ4$CIscoreP, n = 5, reverse = TRUE)
+
+observe({
+  leafletProxy("map", data = CalEJ4) %>%
+    clearGroup(group = 'CalEnviroScreen') %>%
+    addPolygons(color = ~qpal(CIscoreP), 
+                weight = 0.8, 
+                opacity = 0.8,
+                fillColor = ~qpal(CIscoreP),
+                label = ~htmlEscape(paste('Tract', Tract, ';', ' Score', 
+                  round(CIscoreP, 0), '; population ', TotPop19)),
+                group = 'CalEnviroScreen')
+})
+
+
 #Warehouse size bins
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
@@ -242,7 +262,7 @@ parcelDF_circle <- reactive({
       rename(parcel.number = apn) %>%
       mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
              acreage = round(shape_area/43560, 0)) %>%
-      dplyr::select(parcel.number, class, year.built, acreage, Sq.ft.) %>%
+      dplyr::select(parcel.number, class, type, year.built, acreage, Sq.ft.) %>%
       arrange(desc(Sq.ft.)) 
       
   }
