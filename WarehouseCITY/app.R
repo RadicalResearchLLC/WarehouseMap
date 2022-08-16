@@ -138,7 +138,7 @@ observe({
                   fillOpacity = 0, 
                   weight = 2,
                   group = 'Other parcel types',
-                  label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)))
+                  label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_chr)))
 })
 #City boundaries
 observe({
@@ -174,7 +174,7 @@ observe({
                 weight = 2,
                 fillOpacity = 0.8,
                 group = 'Warehouses',
-                label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year.built)))
+                label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_chr)))
 })
 
 ## Generate a data table of warehouses in selected reactive data
@@ -198,7 +198,7 @@ filteredParcels1 <- reactive({
       mutate(shape_area = round(shape_area, 0))
   } else {
     selectedYears <- final_parcels %>%
-      dplyr::filter(year.built != 'unknown') %>%
+      dplyr::filter(year_chr != 'unknown') %>%
       dplyr::filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
       mutate(shape_area = round(shape_area, 0))
   }
@@ -248,7 +248,7 @@ nearby_warehouses <- reactive({
     rename(parcel.number = apn) %>%
     mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
            acreage = round(shape_area/43560, 0)) %>%
-    dplyr::select(parcel.number, class, year.built, acreage, Sq.ft.) %>%
+    dplyr::select(parcel.number, class, year_chr, acreage, Sq.ft.) %>%
     arrange(desc(Sq.ft.))
   
   return(nearby2)
@@ -262,7 +262,7 @@ parcelDF_circle <- reactive({
       rename(parcel.number = apn) %>%
       mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
              acreage = round(shape_area/43560, 0)) %>%
-      dplyr::select(parcel.number, class, type, year.built, acreage, Sq.ft.) %>%
+      dplyr::select(parcel.number, class, type, year_chr, acreage, Sq.ft.) %>%
       arrange(desc(Sq.ft.)) 
       
   }
