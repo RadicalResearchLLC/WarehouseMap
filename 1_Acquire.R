@@ -46,6 +46,7 @@ LA_dir <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
 AQMD_dir <- paste0(wd, '/SCAQMD_shp')
 city_dir <- paste0(wd, '/cities')
 calEJScreen_dir <- paste0(wd, '/calenviroscreen40')
+shape_dir <- paste0(app_dir, '/shapefile')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
@@ -268,7 +269,7 @@ gc()
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
 final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA_parcels, narrow_OC_parcels) %>%
-  mutate(year.built = ifelse(year_built <= 1910, 'unknown', year_built),
+  mutate(year_chr = ifelse(year_built <= 1910, 'unknown', year_built),
          year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
   mutate(floorSpace.sq.ft = round(shape_area*0.65, 1),
          shape_area = round(shape_area, 0)) %>%
@@ -372,7 +373,8 @@ setwd(app_dir)
 save.image('.RData')
 setwd(warehouse_dir)
 save.image('.RData')
-
+setwd(shape_dir)
+st_write(final_parcels, 'finalParcels.shp')
 
 
 
