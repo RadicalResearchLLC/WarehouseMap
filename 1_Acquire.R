@@ -3,33 +3,23 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified July, 2022
+##Last modified September, 2022
 ##This script acquires and tidy parcel data for the app
 
 rm(list =ls()) # clear environment
 '%ni%' <- Negate('%in%') ## not in operator
-
+gc()
 ##Libraries used in data acquisition
 library(RCurl)
 
 ##Libraries used in data processing and visualization
 library(tidyverse)
 library(janitor)
-#library(data.table)
 library(readxl)
-library(spdplyr)
-#library(lubridate)
-
 ##spatial libraries and visualization annotation
 library(leaflet)
 library(sf)
-library(rgdal)
-#library(spatstat)
-#library(raster)
 library(htmltools)
-
-#windrose tool
-#library(openair)
 
 ##set working, data, and app directories
 wd <- getwd()
@@ -42,7 +32,9 @@ crest_dir <- paste0(warehouse_dir, '/CREST_tables.gdb')
 parcel_dir <- paste0(warehouse_dir, '/ParcelAttributed.gdb')
 SBD_parcel_dir <- paste0(warehouse_dir, '/SBD_Parcel')
 OC_dir <- paste0(warehouse_dir, '/OC_parcels')
-LA_dir <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
+##LA data goes through a preprocessing script 2_preprocess_LA_parcels.R
+##This saves time and precious memory in this script
+LA_dir <- paste0(warehouse_dir, '/LAfiltered_shp')
 AQMD_dir <- paste0(wd, '/SCAQMD_shp')
 city_dir <- paste0(wd, '/cities')
 calEJScreen_dir <- paste0(wd, '/calenviroscreen40')
@@ -57,38 +49,12 @@ setwd(warehouse_dir)
 
 gc()
 ##Set minimum size for analysis in thousand sq.ft. for non-warehouse classified
-sq_ft_threshold <- 100000
+sq_ft_threshold <- 28000
 
 ##Try to import LA County data
 sf::st_layers(dsn = LA_dir)
-LA_parcels <- sf::st_read(dsn = LA_dir, quiet = TRUE, type = 3)
-
-LA_100k_parcels <- LA_parcels %>%
-  filter(UseType == 'Industrial')
-names(LA_100k_parcels)
-
-rm(ls = LA_parcels)
-gc()
-
-#now misnamed - not 100k
-LA_industrial_100k_parcels <- LA_100k_parcels %>%
-  #filter(UseType == 'Industrial') %>%
-  mutate(type = ifelse(str_detect(str_to_lower(UseDescription), 'warehous'), 'warehouse', 
-                        ifelse(str_detect(str_to_lower(UseDescription), 'industrial'), 'industrial', 'other')
-                               )
-  ) %>%
-  select(APN, YearBuilt1, Shape_Area, type, Shape, UseDescription) %>%
-  filter(type %in% c('warehouse' #,'industrial'
-                     )) %>%
-  clean_names() %>%
-  mutate(year_built = as.numeric(year_built1),
-         class=use_description) %>%
-  mutate(year_built = ifelse(is.na(year_built), 1910, 
-                             ifelse(year_built < 1911, 1910, year_built))
-         ) %>%
-  select(apn, shape_area, class, type, year_built, Shape) %>%
+LA_warehouse_parcels <- sf::st_read(dsn = LA_dir, quiet = TRUE, type = 3) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
-
 
 #rm(ls = LA_100k_parcels)
 gc()
@@ -247,23 +213,22 @@ narrow_SBDCo_parcels <- SBD_warehouse_ltInd %>%
   mutate(year_built = BASE_YEAR) %>%
   dplyr::select(APN, SHAPE_AREA, class, type, geometry, year_built) %>%
   clean_names() %>%
-  mutate(county = 'San Bernadino')
+  mutate(county = 'San Bernardino')
 
 ## Remove big raw files and save .RData file to app directory
 
 str(narrow_RivCo_parcels)
 str(narrow_SBDCo_parcels)
-str(LA_industrial_100k_parcels)
+str(LA_warehouse_parcels)
 str(narrow_OC_parcels)
 
-narrow_LA_parcels <- rename_geometry(LA_industrial_100k_parcels, 'geometry') %>%
+narrow_LA_parcels <- rename_geometry(LA_warehouse_parcels, 'geometry') %>%
   mutate(type = as.factor(type), county = 'Los Angeles')
 
 rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
    crest_property_dups, crest_property_dups2, crest_property_tidy, OC_parcels) #%>%
 
 gc()
-
 
 #str(final_parcels)
 
@@ -325,7 +290,7 @@ summary_counts <- final_parcels %>%
   group_by(class, type) %>%
   summarize(count = n(), summed = sum(floorSpace.sq.ft), .groups = 'drop')
 
-rm(ls = LA_100k_parcels, LA_industrial_100k_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels,
+rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels,
    parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels)
 #str(final_parcels)
 
@@ -355,17 +320,27 @@ city_boundary <- sf::st_read(dsn = city_dir, quiet = TRUE, type = 3) %>%
   filter(county %ni% c('Ventura', 'Imperial')) %>%
   select(city, county, geometry, acres, shapearea)
 
-city_names <- city_boundary %>%
+city_names1 <- city_boundary %>%
   dplyr::select(city) %>%
   filter(city != 'Unincorporated') %>%
   arrange(city)
 
+city_names2 <- city_boundary %>% 
+  dplyr::select(city, county) %>% 
+  filter(city == 'Unincorporated') %>% 
+  mutate(city = paste(city, county, sep = ' ')) %>% 
+  select(city)
+
+city_names <- rbind(city_names1, city_names2)
+
 city_names$city
+
+rm(ls = city_names1, city_names2)
 
 ##Import CalEnviroScreen
 CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) %>%
   filter(County %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) %>%
-  select(Tract, TotPop19, ApproxLoc, CIscoreP, CIscore, geometry) %>% 
+  select(Tract, TotPop19, ApproxLoc, CIscoreP, CIscore, geometry, DieselPM_P) %>% 
   filter(CIscoreP >= 75) %>% 
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
@@ -374,7 +349,7 @@ save.image('.RData')
 setwd(warehouse_dir)
 save.image('.RData')
 setwd(shape_dir)
-st_write(final_parcels, 'finalParcels.shp')
+st_write(final_parcels, 'finalParcels.shp', append = FALSE)
 
 
 
