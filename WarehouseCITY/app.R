@@ -2,24 +2,17 @@
 ## Authored by Mike McCarthy, Radical Research LLC
 ## Thanks to Sean Raffuse at UC Davis AQRC for help with the nearby intersection code for great circles 
 ## First created May, 2022
-## Last modified August, 2022
+## Last modified October, 2022
 #
 
 library(shiny)
 library(leaflet)
 library(htmltools)
-#library(gghighlight)
-#library(spatstat)
 library(sf)
-#library(gstat)
-#library(spdep)
-#library(raster)
-#library(rgdal)
 library(tidyverse)
 library(DT)
 library(markdown)
-#library(automap)
-#library(gstat)
+
 
 ## Define UI for application that displays warehouses
 # Show app name and logos
@@ -59,7 +52,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
     fluidRow(column(2),
              column(6, align = 'center', dataTableOutput('warehouseDF'))),
     fluidRow(column(9),
-             column(3, paste('Warehouse CITY v1.08, last updated', Sys.Date())
+             column(3, paste('Warehouse CITY v1.09, last updated', Sys.Date())
                     )
     )
   ),
@@ -85,7 +78,7 @@ output$map <- renderLeaflet({
       addProviderTiles(providers$OpenRailwayMap, group = 'Rail') %>%
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
         overlayGroups = c('Warehouses', 'City boundaries', 'Circle', 
-                          'CalEnviroScreen', 'Rail', 
+                           'Rail', 'CalEnviroScreen', 'Diesel PM',
                           'Other parcel types'), # 'SCAQMD boundary',
         options = layersControlOptions(collapsed = FALSE)
         )  %>%
@@ -95,9 +88,15 @@ output$map <- renderLeaflet({
                            '250,000 to 500,000',
                            '500,000 to 1,000,000',
                            '1,000,000+'),
-                title = 'Size bins (Sq.ft.)')
+                title = 'Size bins (Sq.ft.)',
+                group = 'Warehouses') %>% 
+      addLegend(data = CalEJ4,
+                pal = palDPM, 
+                title = 'Diesel PM (%)', 
+                values = ~DieselPM_P,
+                group = 'Diesel PM') 
     
-    map1 %>% hideGroup(c('Rail', 'CalEnviroScreen', 'Other parcel types'))#, 'Warehouse Size', 'SCAQMD boundary')
+    map1 %>% hideGroup(c('Rail', 'CalEnviroScreen', 'Diesel PM', 'Other parcel types'))
     })
 
 OrBr <- c('beige' = '#EEE1B1',
@@ -121,16 +120,7 @@ observe({
     addPolygons(color = 'grey50',
                 group = 'Circle')
   })
-#AQMD boundary
-#observe({
-#  leafletProxy("map", data = AQMD_boundary) %>%
-#    clearGroup(group = 'SCAQMD boundary') %>%
-#    addPolygons(color = 'black', 
-#                fillOpacity = 0.02, 
-#                weight = 3,
-#                group = 'SCAQMD boundary')
-#})
-#Light industry overlay
+#Display 'other' parcel type outlines
 observe({
   leafletProxy("map", data = filter(filteredParcels(), type == 'other')) %>%
     clearGroup(group = 'Other parcel types') %>%
@@ -150,10 +140,13 @@ observe({
                 group = 'City boundaries')
 })
 #CalEnviroScreen4.0 census tracts
-qpal <- colorQuantile('magma', CalEJ4$CIscoreP, n = 5, reverse = TRUE)
+CalEJ4_75 <- CalEJ4 %>% 
+  filter(CIscoreP >= 75.0)
+
+qpal <- colorQuantile('magma', CalEJ4_75$CIscoreP, n = 5, reverse = TRUE)
 
 observe({
-  leafletProxy("map", data = CalEJ4) %>%
+  leafletProxy("map", data = CalEJ4_75) %>%
     clearGroup(group = 'CalEnviroScreen') %>%
     addPolygons(color = ~qpal(CIscoreP), 
                 weight = 0.8, 
@@ -162,6 +155,18 @@ observe({
                 label = ~htmlEscape(paste('Tract', Tract, ';', ' Score', 
                   round(CIscoreP, 0), '; population ', TotPop19)),
                 group = 'CalEnviroScreen')
+})
+#Diesel PM census tracts
+palDPM <- colorQuantile(palette = 'Greys', domain = CalEJ4$DieselPM_P, n = 5)
+
+observe({
+  leafletProxy("map", data = CalEJ4) %>%
+    clearGroup(group = 'Diesel PM') %>%
+    addPolygons(color = ~palDPM(DieselPM_P), 
+                stroke = FALSE,
+                fillOpacity = 0.5,
+                fillColor = ~palDPM(DieselPM_P),
+                group = 'Diesel PM')
 })
 
 
