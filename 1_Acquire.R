@@ -49,19 +49,15 @@ setwd(warehouse_dir)
 
 gc()
 ##Set minimum size for analysis in thousand sq.ft. for non-warehouse classified
-sq_ft_threshold <- 28000
+sq_ft_threshold_WH <- 28000
+sq_ft_threshold_maybeWH <- 150000
 
 ##Try to import LA County data
 sf::st_layers(dsn = LA_dir)
 LA_warehouse_parcels <- sf::st_read(dsn = LA_dir, quiet = TRUE, type = 3) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
-#rm(ls = LA_100k_parcels)
 gc()
-
-## List the GDB files
-#sf::st_layers(dsn = crest_dir)
-#sf::st_layers(dsn = parcel_dir)
 
 ##Import parcels and property record files for Riverside County
 ##st_read(type=1) is attempting to create the same sfc type for both counties
@@ -113,13 +109,13 @@ crest_property_tidy <- bind_rows(crest_property_solo, crest_property_dups2)
 parcels_warehouse <- parcels %>%
   mutate(class = stringr::str_to_lower(CLASS_CODE)) %>%
   filter(str_detect(class, 'warehouse')) %>%
- # filter(SHAPE_Area > sq_ft_threshold) %>%
+  #filter(SHAPE_Area > sq_ft_threshold_WH) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 parcels_lightIndustry <- parcels %>%
   mutate(class = stringr::str_to_lower(CLASS_CODE)) %>%
   filter(str_detect(class, 'light industrial')) %>%
-  filter(SHAPE_Area > sq_ft_threshold) %>%
+  filter(SHAPE_Area > sq_ft_threshold_maybeWH) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 ##Bind two Riv.co. datasets together
@@ -154,9 +150,9 @@ SBD_codes <- read_excel('Assessor Use Codes 05-21-2012.xls') %>%
 ##Filter SBDCO data by warehouse and light industrial, filter by size threshold
 ##Fix coordinate projection
 SBD_warehouse_ltInd <- inner_join(SBD_parcels, SBD_codes, by = c('TYPEUSE' = 'use_code' )) %>%
-  mutate(threshold = ifelse(SHAPE_AREA > sq_ft_threshold, 1, 0)) %>%
+  mutate(threshold_maybeWH = ifelse(SHAPE_AREA > sq_ft_threshold_maybeWH, 1,0)) %>%
   mutate(exclude = ifelse(type == 'warehouse', 0,
-                    ifelse(threshold == 1, 0, 1))) %>%
+                    ifelse(threshold_maybeWH == 1, 0, 1))) %>%
   filter(exclude == 0) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") %>%
   mutate(type = as.factor(type))
@@ -183,7 +179,7 @@ narrow_OC_parcels <- OC_parcels %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") %>%
   mutate(type = as.factor(type)) %>%
   st_zm() %>%
-  mutate(threshold = ifelse(shape_area > sq_ft_threshold, 1, 0)) %>%
+  mutate(threshold = ifelse(shape_area > sq_ft_threshold_maybeWH, 1, 0)) %>%
   mutate(exclude = ifelse(type == 'warehouse', 0,
                           ifelse(threshold == 1, 0, 1))) %>%
   filter(exclude == 0) %>%
@@ -255,9 +251,7 @@ final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA
     floorSpace.sq.ft >=500000 & floorSpace.sq.ft < 1000000 ~'500,000 to 1,000,000',
     floorSpace.sq.ft >=1000000 ~ '1,000,000+'
   ))) %>%
-  mutate(exclude = ifelse(
-    type == 'warehouse', 0,
-     ifelse(floorSpace.sq.ft > sq_ft_threshold, 0, 1))) %>%
+  mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) %>%
   filter(exclude == 0)
   
 
@@ -305,11 +299,9 @@ setwd(wd)
 source('QA_list.R')
 
 final_parcels <- final_parcels %>%
-  filter(apn %ni% not_warehouse) %>%
+  filter(apn %ni% not_warehouse) #%>%
 ##FIXME if 1 acre threshold is important
-    filter(shape_area >= 43560)
-#centroids <- centroids %>%
-#  filter(apn %ni% not_warehouse)
+   
 
 gc()
 ##Import and clean city boundary data
@@ -341,7 +333,7 @@ rm(ls = city_names1, city_names2)
 CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) %>%
   filter(County %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) %>%
   select(Tract, TotPop19, ApproxLoc, CIscoreP, CIscore, geometry, DieselPM_P) %>% 
-  filter(CIscoreP >= 75) %>% 
+  #filter(CIscoreP >= 75) %>% 
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 setwd(app_dir)
