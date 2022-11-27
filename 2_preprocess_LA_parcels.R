@@ -3,9 +3,10 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified September, 2022
+##Last modified November, 2022
 ##This script preprocesses LA shapefile data because it is very slow and 
 ##this is intended to avoid having to do it multiple times since it only updates quarterly
+##Also now removes duplicate location APN parcels (~893 APNs)
 
 rm(list =ls()) # clear environment
 #'%ni%' <- Negate('%in%') ## not in operator
@@ -58,7 +59,16 @@ LA_industrial_28k_parcels <- LA_warehouse_parcels %>%
 rm(ls = LA_warehouse_parcels)
 gc()
 
+u <- st_equals(LA_industrial_28k_parcels, retain_unique = TRUE)
+unique <- LA_industrial_28k_parcels[-unlist(u),] %>% 
+  st_set_geometry(value = NULL)
+
+final_LA <- unique %>% 
+  left_join(LA_industrial_28k_parcels)
+
+rm(ls = u, unique, LA_industrial_28k_parcels)
+
 setwd(LA_tidy)
-st_write(LA_industrial_28k_parcels, 'LA_filtered_parcels.shp')
+st_write(final_LA, 'LA_filtered_parcels.shp')
 
 setwd(wd)
