@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified September, 2022
+##Last modified November, 2022
 ##This script acquires and tidy parcel data for the app
 
 rm(list =ls()) # clear environment
@@ -35,7 +35,7 @@ OC_dir <- paste0(warehouse_dir, '/OC_parcels')
 ##LA data goes through a preprocessing script 2_preprocess_LA_parcels.R
 ##This saves time and precious memory in this script
 LA_dir <- paste0(warehouse_dir, '/LAfiltered_shp')
-AQMD_dir <- paste0(wd, '/SCAQMD_shp')
+#AQMD_dir <- paste0(wd, '/SCAQMD_shp')
 city_dir <- paste0(wd, '/cities')
 calEJScreen_dir <- paste0(wd, '/calenviroscreen40')
 shape_dir <- paste0(app_dir, '/shapefile')
@@ -211,10 +211,38 @@ narrow_SBDCo_parcels <- SBD_warehouse_ltInd %>%
   clean_names() %>%
   mutate(county = 'San Bernardino')
 
+
+# Import DataTree Year_built info
+DataTree <- readxl::read_excel('SBDCo_warehouse_list2_Output.xlsx') %>% 
+  janitor::clean_names() %>% 
+  select(apn_formatted, apn_unformatted, year_built, year_built_effective)
+
+noYearValue <- DataTree %>% 
+  filter(is.na(year_built) | year_built == 0)
+
+wYearValue <- DataTree %>% 
+  filter(!is.na(year_built)) %>% 
+  distinct() %>% 
+  filter(year_built > 1850)
+
+compare <- narrow_SBDCo_parcels %>% 
+  mutate(apn_formatted = str_c(str_sub(apn, 1, 4), '-',
+                               str_sub(apn, 5, 7), '-',
+                               str_sub(apn, 8, 9), '-',
+                               '0000')) %>%
+  rename(year_base = year_built) %>% 
+  left_join(wYearValue, by = 'apn_formatted') %>% 
+  mutate(diff_yr = year_built - year_base) #%>% 
+
+narrow_SBDCo_parcels2 <- compare %>% 
+  mutate(year_built2 = ifelse(is.na(year_built), year_base, year_built)) %>% 
+  dplyr::select(apn, shape_area, class, type, geometry, year_built2, county) %>% 
+  rename(year_built = year_built2)
+
 ## Remove big raw files and save .RData file to app directory
 
 str(narrow_RivCo_parcels)
-str(narrow_SBDCo_parcels)
+str(narrow_SBDCo_parcels2)
 str(LA_warehouse_parcels)
 str(narrow_OC_parcels)
 
@@ -226,10 +254,11 @@ rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_propert
 
 gc()
 
+
 #str(final_parcels)
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
-final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_LA_parcels, narrow_OC_parcels) %>%
+final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_LA_parcels, narrow_OC_parcels) %>%
   mutate(year_chr = ifelse(year_built <= 1910, 'unknown', year_built),
          year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
   mutate(floorSpace.sq.ft = round(shape_area*0.65, 1),
@@ -284,14 +313,10 @@ summary_counts <- final_parcels %>%
   group_by(class, type) %>%
   summarize(count = n(), summed = sum(floorSpace.sq.ft), .groups = 'drop')
 
-rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels,
-   parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels)
-#str(final_parcels)
+rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_SBDCo_parcels2,
+   parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels,
+   compare, DataTree, wYearValue, noYearValue)
 
-#sf::st_layers(dsn = AQMD_dir)
-
-#AQMD_boundary <-  sf::st_read(dsn = AQMD_dir, quiet = TRUE, type = 3) %>%
-#  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 ##Import QA list of warehouses and non-warehouses 
 ##FIXME - move this up for when we identify warehouses currently not on the list
@@ -301,33 +326,16 @@ source('QA_list.R')
 final_parcels <- final_parcels %>%
   filter(apn %ni% not_warehouse) #%>%
 ##FIXME if 1 acre threshold is important
-   
-
 gc()
-##Import and clean city boundary data
-setwd(city_dir)
-#sf::st_layers(dsn = city_dir)
-city_boundary <- sf::st_read(dsn = city_dir, quiet = TRUE, type = 3) %>%
-  clean_names() %>%
-  filter(county %ni% c('Ventura', 'Imperial')) %>%
-  select(city, county, geometry, acres, shapearea)
+##Check for warehouse duplicates by location
 
-city_names1 <- city_boundary %>%
-  dplyr::select(city) %>%
-  filter(city != 'Unincorporated') %>%
-  arrange(city)
+u <- st_equals(final_parcels, retain_unique = TRUE)
+unique <- final_parcels[-unlist(u),] %>% 
+  st_set_geometry(value = NULL)
 
-city_names2 <- city_boundary %>% 
-  dplyr::select(city, county) %>% 
-  filter(city == 'Unincorporated') %>% 
-  mutate(city = paste(city, county, sep = ' ')) %>% 
-  select(city)
+rm(ls = u, unique, SBD_codes, code_desc)
 
-city_names <- rbind(city_names1, city_names2)
-
-city_names$city
-
-rm(ls = city_names1, city_names2)
+source('4_places.R')
 
 ##Import CalEnviroScreen
 CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) %>%
@@ -343,5 +351,6 @@ save.image('.RData')
 setwd(shape_dir)
 st_write(final_parcels, 'finalParcels.shp', append = FALSE)
 
+setwd(wd)
 
 
