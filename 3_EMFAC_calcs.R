@@ -71,3 +71,5 @@ EMFAC_summary2 <- EMFAC_tidy2 %>%
   summarize(sum_VMT = sum(total_vmt), sum_tons = sum(tons_day)) %>%
   mutate(tons_mile = sum_tons/sum_VMT) %>%
   mutate(pounds_mile = 2000*tons_mile)
+
+write.csv(EMFAC_summary2, 'summary_emissions.csv')
