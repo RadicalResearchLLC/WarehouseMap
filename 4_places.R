@@ -107,13 +107,9 @@ SCAGList2 <- SCAGList %>%
 
 ## Bind places together
 
-jurisdictions <- bind_rows(final_cities, MJPA3, SCAGList2, Unincorp_RivCo2)
-
-leaflet() %>% 
-  addTiles() %>% 
-  addPolygons(data = jurisdictions,
-              label = ~htmlEscape(name),
-              weight = 1,
-              fillOpacity = 0.2)
+jurisdictions <- bind_rows(final_cities, MJPA3, SCAGList2, Unincorp_RivCo2) %>% 
+  st_make_valid()
 
 rm(ls = final_cities, MJPA3, SCAGList, SCAGList2, Unincorp_RivCo2)
+
+
