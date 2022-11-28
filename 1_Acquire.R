@@ -39,6 +39,7 @@ LA_dir <- paste0(warehouse_dir, '/LAfiltered_shp')
 city_dir <- paste0(wd, '/cities')
 calEJScreen_dir <- paste0(wd, '/calenviroscreen40')
 shape_dir <- paste0(app_dir, '/shapefile')
+geojson_dir <- paste0(app_dir, '/geoJSON')
 #aqdata_dir <- paste0(wd, '/air_quality_data')
 #metdata_dir <- paste0(wd, '/met_data' )
 #trafficdata_dir <- paste0(wd, '/traffic_data')
@@ -335,6 +336,7 @@ unique <- final_parcels[-unlist(u),] %>%
 
 rm(ls = u, unique, SBD_codes, code_desc)
 
+setwd(wd)
 source('4_places.R')
 
 ##Import CalEnviroScreen
@@ -350,7 +352,8 @@ setwd(warehouse_dir)
 save.image('.RData')
 setwd(shape_dir)
 st_write(final_parcels, 'finalParcels.shp', append = FALSE)
-
+setwd(geojson_dir)
+st_write(final_parcels, 'finalParcels.geojson', append = FALSE)
 setwd(wd)
 
 
