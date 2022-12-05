@@ -18,6 +18,7 @@ wd <- getwd()
 city_dir <- paste0(wd, '/places/cities')
 county_dir <- paste0(wd, '/places/CA_Counties')
 MJPA_dir <- paste0(wd, '/places/MJPA/')
+community <- paste0(wd, '/community_geojson/')
 
 ##Import city boundary data - https://data.ca.gov/dataset/ca-geographic-boundaries
 setwd(city_dir)
@@ -112,4 +113,6 @@ jurisdictions <- bind_rows(final_cities, MJPA3, SCAGList2, Unincorp_RivCo2) %>%
 
 rm(ls = final_cities, MJPA3, SCAGList, SCAGList2, Unincorp_RivCo2)
 
+setwd(community)
+st_write(jurisdictions, 'jurisdictions.geojson', append = FALSE)
 
