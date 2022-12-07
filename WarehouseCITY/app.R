@@ -230,9 +230,9 @@ observe({
 ## Generate a data table of warehouses in selected reactive data
 output$warehouseDF <- DT::renderDataTable(
   parcelDF_circle() %>% 
-    rename('Assessor parcel number' = parcel.number, 'Building classification' = class, Acres = acreage,
-           'Year built' = year_chr, 'Building sq.ft.' = Sq.ft.) %>% 
-    select(-type), 
+  rename('Assessor parcel number' = parcel.number, 'Building classification' = class, Acres = acreage,
+           'Year built' = year_built, 'Building sq.ft.' = Sq.ft.) %>% 
+  select(-type), 
   server = FALSE,
   caption  = 'Warehouse list by parcel number, square footage, and year built',
   rownames = FALSE, 
@@ -324,16 +324,16 @@ circle <- reactive({
 ##Code to select nearby warehouse polygons
 nearby_warehouses <- reactive({
   req(circle())
-  nearby <- st_intersects(circle(), filteredParcels())
-  nearby2 <- filteredParcels()[nearby[[1]],] %>%
+  nearby <- st_join(circle(), filteredParcels()) %>% 
+    st_set_geometry(value = NULL) %>% 
     as.data.frame() %>%
     rename(parcel.number = apn) %>%
     mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
            acreage = round(shape_area/43560, 0)) %>%
-    dplyr::select(parcel.number, class, year_chr, acreage, Sq.ft.) %>%
+    dplyr::select(parcel.number, class, type, year_built, acreage, Sq.ft.) %>%
     arrange(desc(Sq.ft.))
   
-  return(nearby2)
+  return(nearby)
 })
 
 ##Select between data without selection radius or with
@@ -344,9 +344,8 @@ parcelDF_circle <- reactive({
       rename(parcel.number = apn) %>%
       mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
              acreage = round(shape_area/43560, 0)) %>%
-      dplyr::select(parcel.number, class, type, year_chr, acreage, Sq.ft.) %>%
+      dplyr::select(parcel.number, class, type, year_built, acreage, Sq.ft.) %>%
       arrange(desc(Sq.ft.)) 
-      
   }
   else {
     warehouse2 <- nearby_warehouses() %>%
