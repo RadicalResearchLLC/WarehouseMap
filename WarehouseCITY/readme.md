@@ -1,4 +1,4 @@
-# Warehouse CITY Documentation (alpha v1.10 - released December 4, 2022)
+# Warehouse CITY Documentation (alpha v1.11 - released December 28, 2022)
 
 # Introduction
 
@@ -14,7 +14,7 @@ Directly above the map is a table that provides summary statistics for the user 
 
 ### Map
 
-The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left corner of the map. At the top right of the map, the imagery can be switched between a street level **Basemap** and aerial **Imagery**. Polygon overlays can be turned on or off by selecting the check boxes for **Warehouses**, **Jurisdictions**, **Circle**, **Size bins**, **Rail**, **CalEnviroScreen**, and **Diesel PM**. Clicking within the map draws a gray circle with a user selected radius defaulting to 5 km (~3.1 miles). This circle is used to identify nearby warehouses that are cumulatively affecting the selected area's air quality and truck traffic. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). The **Rail** layer indicates rail lines and railyards through the open source OpenRailwayMap providerTiles.
+The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left corner of the map. At the top right of the map, the imagery can be switched between a street level **Basemap** and aerial **Imagery**. Polygon overlays can be turned on or off by selecting the check boxes for **Warehouses**, **Jurisdictions**, **Circle**, **Size bins**, **Rail**, **CalEnviroScreen**, and **Diesel PM**. Clicking within the map draws a gray circle with a user selected radius defaulting to 5 km (~3.1 miles). This circle is used to identify nearby warehouses that are cumulatively affecting the selected area's air quality and truck traffic. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). The **Rail** layer indicates rail lines and railyards through the open source [OpenRailwayMap](https://www.openrailwaymap.org/) providerTile.
 
 The **CalEnviroScreen** overlay provides a color-coded overlay of census tracts and their associated pollution burden percentile score. These scores are based on the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40). Darker colors indicate higher impact of pollution and socioeconomic disadvantage. Mousing over census tracts displays the census tract number, population, and percentile score (0-100).
 
@@ -69,7 +69,7 @@ Parcel data was obtained from publicly available data warehouses maintained by t
 
 Parcel shapefiles were obtained November 21, 2022 for Riverside, San Bernardino County, and LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel.
 
-Emissions factor pollution estimates for heavy-duty trucks were generated from a VMT weighted calculation of EMFAC2021 based on Southern California Air Quality Management District fleet specific data for 2022 downloaded from <https://arb.ca.gov/emfac/> on October 23, 2022. Data and methodology for these fleet-average calculations is available upon request.   
+Emissions factor pollution estimates for heavy-duty trucks (GVWR > 8,500 pounds) were generated from a VMT weighted calculation of EMFAC2021 based on Southern California Air Quality Management District fleet specific data for 2022 downloaded from <https://arb.ca.gov/emfac/> on October 23, 2022. Data and methodology for these fleet-average calculations is available upon request.   
 
 # Methods
 
@@ -85,7 +85,7 @@ Parcel.Area * FAR * Truck.Trip.Estimate / 1000 = Truck.trips.per.day
 
 We note that we do not include any estimates of vehicle idling, which is particularly important for local exposures near warehouses. Thus, these estimates are likely underestimates of total emissions in close proximity to warehouses.
 
-Default Diesel PM (exhaust), NO<sub>x</sub>, and CO<sub>2</sub> emissions are based on year 2022 EMFAC2021 (version 1.0.2) annual emission factors for the 2022 Heavy-duty fleet year for South Coast AQMD region. Diesel PM<sub>2.5</sub> emissions are \~0.0000364 pounds per mile. NO<sub>x</sub> emissions are \~0.0041 pounds per mile. CO<sub>2</sub> emissions are \~2.44 pounds per mile. Vehicle trips were multiplied by a default truck trip distance of 38 miles. The trip distance is based on average truck trip distances for 2021 for San Bernardino from [Streetlight Data](https://www.streetlightdata.com) as provided by San Bernardino County Transportation Authority. 
+Default Diesel PM (exhaust), NO<sub>x</sub>, and CO<sub>2</sub> emissions are based on year 2022 EMFAC2021 (version 1.0.2) annual emission factors for heavy-duty trucks (GVWR > 8,500 lbs) for the 2022 fleet year for South Coast AQMD region. Diesel PM<sub>2.5</sub> emissions are \~0.0000364 pounds per mile. NO<sub>x</sub> emissions are \~0.0041 pounds per mile. CO<sub>2</sub> emissions are \~2.44 pounds per mile. Vehicle trips were multiplied by a default truck trip distance of 38 miles. The trip distance is based on average truck trip distances for 2021 for San Bernardino from [Streetlight Data](https://www.streetlightdata.com) as provided by San Bernardino County Transportation Authority. 
 
 The final code for calculating the selected warehouses square footage, truck trips, and pollutant emissions is reproduced exactly below.
 
@@ -120,7 +120,7 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
 -   **Duplicate records** - some parcel numbers have multiple records for build year which can lead to double-counting area, truck trips, and emissions. When duplicates occur, we are using the earliest build year from the parcel database which may not account for parcel modifications or expansions. Additionally, some parcels in Los Angeles County had multiple parcel numbers associated with the same warehouse; only one parcel number was allowed for these warehouses to avoid double counting. 
 
--   **Emissions calculations** - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not readily available at the time but could be incorporated in later versions if individual facility information becomes avaiable through the SCAQMD Rule 2305 reporting.
+-   **Emissions calculations** - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not readily available at the time but could be incorporated in later versions if individual facility information becomes available through the SCAQMD Rule 2305 reporting.
 
 -   **Orange County data** - Assessor parcel data is not directly from the assessor's office and is likely less reliable than the other three counties as a result. It is also older and less complete.\
 
@@ -130,11 +130,12 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
     -   We are working to improve the parcel information for this entire dataset. If you have any information on individual parcels that you believe are currently misclassified, please contact us at the email below and we'll work to improve our classification.\
     -   A large number (8,644) of sub 1-acre warehouses are excluded from this analysis as the application slows down significantly when displaying these micro-warehouses. The total area of the warehouses with less than 1-acre parcels is 1.7x10<sup>8</sup> sq.ft.\
-    -   No estimate is made for light-duty vehicle trips of workers commuting to and from warehouses.\
-    -   San Bernardino "build year" values are based on assessor base year, which is the "last year of appraisal" which likely biases the dataset for this county to look younger than it may truly be for parcels that changed ownership. Build year information is not directly available for this county at this time.
+    -   No estimate is made for emissions light-duty vehicle trips of workers commuting to and from warehouses.\
+    -   No estimate is made for emissions from light-duty or medium duty vehicle trips of delivery vehicles to and from warehouses.  The cutoff for trucks is GVWR > 8,500 pounds per EMFAC classification.  
+    -   San Bernardino "build year" values are now based on [DataTree](https://web.datatree.com/) parcel classifications of build year, rather than 'assessor base year' estimates from the San Bernardino County Open Data shapefiles.  
 
 ## Contact and Support
 
--   If you have questions or suggestions, please email [mikem\@radicalresearch.llc](mailto:mikem@radicalresearch.llc){.email}
+-   If you have questions or suggestions, please email [mikem@radicalresearch.llc](mailto:mikem@radicalresearch.llc){.email}
 
 -   If you are interested in supporting local organizations working on land-use issues, please visit the [Redford Conservancy](https://www.pitzer.edu/redfordconservancy/) and/or [Riverside Neighbors Opposing Warehouses](https://tinyurl.com/RIVNOW).
