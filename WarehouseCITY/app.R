@@ -13,7 +13,8 @@ library(tidyverse)
 library(DT)
 library(markdown)
 
-deploy_date <- 'December 4, 2022'
+deploy_date <- 'December 28, 2022'
+version <- 'Warehouse CITY v1.11, last updated'
 ## Define UI for application that displays warehouses
 # Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
@@ -69,7 +70,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
             hr(),
             h3('Version and Deployment info'),
             hr(),
-            paste('Warehouse CITY v1.10, last updated', deploy_date)
+            paste(version, deploy_date)
             ),
              column(8, align = 'center', 
              dataTableOutput('Summary'),
