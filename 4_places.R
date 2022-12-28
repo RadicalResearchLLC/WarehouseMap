@@ -73,19 +73,46 @@ setwd(MJPA_dir)
 MJPA <- read_sf(dsn = MJPA_dir ) %>% 
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
-MJPA2 <- st_union(MJPA) %>% 
+
+
+listLat <- MJPA[[4]][[6]]
+testList <- do.call(rbind.data.frame, listLat) %>% 
+  mutate(row = row_number()) %>% 
+  mutate(flagLong = ifelse(V1 > -117.301, 1, 0),
+         flagLong2 = ifelse(V1 < -117.29598, 1, 0),
+         flagLat1 = ifelse(V2 > 33.9091, 1, 0),
+         flagLat2 = ifelse(V2 < 33.916795, 1, 0)) %>% 
+  mutate(flagSum = flagLong + flagLong2 + flagLat1 + flagLat2) %>% 
+  #filter(flagSum == 4) 
+  mutate(V2.2 = ifelse(between(row, 3917, 3925), 33.90942, V2),
+         V1.2 = ifelse(between(row, 3908, 3917), -117.2987, V1)) %>% 
+  mutate(V2.2 = ifelse(between(row, 3903, 3908), 33.91306, V2.2)) 
+
+listLat2 <- testList %>% 
+  select(V1.2, V2.2) %>%
+  st_as_sf(coords = c('V1.2', 'V2.2'), crs = 4326) %>% 
+  summarize(geometry = st_combine(geometry)) %>% 
+  st_cast('POLYGON') %>% 
+  mutate(NAME = 'MARCH JOINT POWERS AUTHORITY')
+
+MJPA2 <- MJPA %>% 
+  slice(1:5) %>% 
+  select(NAME, geometry) %>% 
+  bind_rows(listLat2)
+
+MJPA2 <- st_union(MJPA2) %>% 
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 areaValue <- st_area(MJPA2)
 
 MJPA3 <- st_as_sf(MJPA2) %>% 
-  mutate(name = 'MarchJPA',
+  mutate(name = 'March JPA',
          #convert m^2 to ft^2
          #area = as.numeric(areaValue*10.7639),
          lsad = 'JPA') %>% 
   rename(geometry = x)  
 
-rm(ls = MJPA, MJPA2, u, unique, city_boundary, city_list)
+rm(ls = MJPA, MJPA2, u, unique, city_boundary, city_list, listLat2, listLat, testList)
 
 ## Remove MJPA from unincorporated Rivco
 
@@ -96,9 +123,15 @@ Unincorp_RivCo1 <- SCAGList %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") %>% 
   rename(geometry = x) 
 
+bufferJPA <- st_buffer(MJPA3, dist = 100)
+
+leaflet() %>% 
+  addTiles() %>% 
+  addPolygons(data = bufferJPA)
+
 Unincorp_RivCo2 <- Unincorp_RivCo1 %>% 
-  st_difference(MJPA3) %>% 
-  mutate(name = 'Unincorporated RivCo')
+  st_difference(bufferJPA) %>% 
+  mutate(name = 'Unincorporated Riverside')
 
 rm(ls = Unincorp_RivCo1)
 
@@ -114,5 +147,5 @@ jurisdictions <- bind_rows(final_cities, MJPA3, SCAGList2, Unincorp_RivCo2) %>%
 rm(ls = final_cities, MJPA3, SCAGList, SCAGList2, Unincorp_RivCo2)
 
 setwd(community)
-st_write(jurisdictions, 'jurisdictions.geojson', append = FALSE)
+st_write(jurisdictions, 'jurisdictions.geojson', append = FALSE, delete_layer = TRUE)
 
