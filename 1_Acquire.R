@@ -343,7 +343,7 @@ u <- st_equals(final_parcels, retain_unique = TRUE)
 unique <- final_parcels[-unlist(u),] %>% 
   st_set_geometry(value = NULL)
 
-rm(ls = u, unique, SBD_codes, code_desc)
+rm(ls = u, unique, SBD_codes, code_desc, parcels_manual_wh)
 
 ##import 
 setwd(wd)
