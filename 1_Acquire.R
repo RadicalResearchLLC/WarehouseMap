@@ -114,6 +114,14 @@ parcels_warehouse <- parcels %>%
   #filter(SHAPE_Area > sq_ft_threshold_WH) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
+source(paste0(wd, '/QA_list2.R'))
+
+parcels_manual_wh <- parcels %>% 
+  mutate(class = stringr::str_to_lower(CLASS_CODE)) %>%
+  filter(APN %in% add_as_warehouse) %>%
+  #filter(SHAPE_Area > sq_ft_threshold_WH) %>%
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+
 parcels_lightIndustry <- parcels %>%
   mutate(class = stringr::str_to_lower(CLASS_CODE)) %>%
   filter(str_detect(class, 'light industrial')) %>%
@@ -123,7 +131,7 @@ parcels_lightIndustry <- parcels %>%
 ##Bind two Riv.co. datasets together
 ##Create a type category for the warehouse and industrial designation parcels
 
-parcels_join_yr <- bind_rows(parcels_warehouse, parcels_lightIndustry) %>%
+parcels_join_yr <- bind_rows(parcels_warehouse, parcels_lightIndustry, parcels_manual_wh) %>%
   left_join(crest_property_tidy, by =c('APN' = 'PIN')) %>%
   unique() %>%
   mutate(YEAR_BUILT = ifelse(is.na(YEAR_BUILT), 1776, YEAR_BUILT)) %>%
