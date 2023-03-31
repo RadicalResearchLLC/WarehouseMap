@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified November, 2022
+##Last modified March, 2023
 ##This script acquires and tidy parcel data for the app
 
 rm(list =ls()) # clear environment
@@ -16,10 +16,12 @@ library(RCurl)
 library(tidyverse)
 library(janitor)
 library(readxl)
+library(googlesheets4)
 ##spatial libraries and visualization annotation
 library(leaflet)
 library(sf)
 library(htmltools)
+library(rmapshaper)
 
 ##set working, data, and app directories
 wd <- getwd()
@@ -51,7 +53,7 @@ setwd(warehouse_dir)
 
 gc()
 ##Set minimum size for analysis in thousand sq.ft. for non-warehouse classified
-sq_ft_threshold_WH <- 28000
+sq_ft_threshold_WH <- 43560
 sq_ft_threshold_maybeWH <- 150000
 
 ##Try to import LA County data
@@ -111,7 +113,6 @@ crest_property_tidy <- bind_rows(crest_property_solo, crest_property_dups2)
 parcels_warehouse <- parcels %>%
   mutate(class = stringr::str_to_lower(CLASS_CODE)) %>%
   filter(str_detect(class, 'warehouse')) %>%
-  #filter(SHAPE_Area > sq_ft_threshold_WH) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 source(paste0(wd, '/QA_list2.R'))
@@ -119,7 +120,6 @@ source(paste0(wd, '/QA_list2.R'))
 parcels_manual_wh <- parcels %>% 
   mutate(class = stringr::str_to_lower(CLASS_CODE)) %>%
   filter(APN %in% add_as_warehouse) %>%
-  #filter(SHAPE_Area > sq_ft_threshold_WH) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 parcels_lightIndustry <- parcels %>%
@@ -169,6 +169,7 @@ SBD_warehouse_ltInd <- inner_join(SBD_parcels, SBD_codes, by = c('TYPEUSE' = 'us
 
 ##Import OC data - current parcels are useless
 #sf::st_layers(dsn = OC_dir)
+##FIXME
 lu_codes <- c('1231', '1323', '1340', '1310')
 OC_parcels <- sf::st_read(dsn=OC_dir, quiet = TRUE, type = 3) %>%
   clean_names() %>%
@@ -271,7 +272,7 @@ gc()
 final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_LA_parcels, narrow_OC_parcels) %>%
   mutate(year_chr = ifelse(year_built <= 1910, 'unknown', year_built),
          year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
-  mutate(floorSpace.sq.ft = round(shape_area*0.65, 1),
+  mutate(floorSpace.sq.ft = round(shape_area*0.55, 1),
          shape_area = round(shape_area, 0)) %>%
   #filter(floorSpace.th.sq.ft > 100) %>%
   mutate(yr_bin = as.factor(case_when(
@@ -292,7 +293,6 @@ final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_L
   ))) %>%
   mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) %>%
   filter(exclude == 0)
-  
 
 final_parcels$yr_bin <- factor(final_parcels$yr_bin, 
                                    levels = c(  '1911 - 1972',
@@ -310,14 +310,6 @@ final_parcels$size_bin <- factor(final_parcels$size_bin,
                                     '500,000 to 1,000,000',
                                     '1,000,000+'))
 
-#paletteYr <- colorFactor(palette = 'inferno',
-#                       levels = final_parcels$yr_bin)
-
-#paletteSize <- colorFactor(palette = 'YlOrBn', levels = final_parcels$size_bin)
-
-#centroids <- final_parcels %>%
-#  st_centroid()
-  
 summary_counts <- final_parcels %>%
   as.data.frame() %>%
   group_by(class, type) %>%
@@ -356,14 +348,52 @@ CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) %>%
   #filter(CIscoreP >= 75) %>% 
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
+plannedWH.url <- 'https://raw.githubusercontent.com/RadicalResearchLLC/PlannedWarehouses/main/plannedWarehouses.geojson'
+plannedWarehouses <- st_read(plannedWH.url) %>% 
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+
+shape_area <- st_area(plannedWarehouses)
+
+planned_tidy <- plannedWarehouses %>% 
+  mutate(shape_area =  round(as.numeric(10.764*shape_area), -3),
+         class = 'Planned and Approved',
+         year_chr = 'future',
+         year_built = 2025,
+         type = 'warehouse',
+         row = row_number())
+
+IEcounties <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/community_geojson/California_County_Boundaries.geojson') %>% 
+  filter(COUNTY_NAME %in% c('Riverside', 'San Bernardino')) %>% 
+  select(COUNTY_NAME, geometry) %>% 
+  rename(county = COUNTY_NAME)
+
+planned_final <- planned_tidy %>% 
+  st_join(IEcounties) %>% 
+  st_set_geometry(value = NULL) %>% 
+  inner_join(planned_tidy) %>%
+  filter(row != 342) %>% 
+  st_as_sf() %>% 
+  st_transform(crs=4326)  %>% 
+  select(-row) %>% 
+  mutate(floorSpace.sq.ft = 0.55*shape_area)
+
+rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2)
+##Add data and stats for joining here
+##FIXME
+
 setwd(app_dir)
 save.image('.RData')
 setwd(warehouse_dir)
 save.image('.RData')
 setwd(shape_dir)
+unlink('finalParcels.shp')
 st_write(final_parcels, 'finalParcels.shp', append = FALSE)
+#st_write(planned_final, 'plannedParcels.shp', append = FALSE)
 setwd(geojson_dir)
+unlink('finalParcels.geojson')
+unlink('plannedParcels.geojson')
 st_write(final_parcels, 'finalParcels.geojson', append = FALSE)
+st_write(planned_final, 'plannedParcels.geojson', append = FALSE)
 setwd(wd)
 
 
