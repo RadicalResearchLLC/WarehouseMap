@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified March, 2023
+##Last modified April, 2023
 ##This script acquires and tidy parcel data for the app
 
 rm(list =ls()) # clear environment
@@ -53,7 +53,8 @@ setwd(warehouse_dir)
 
 gc()
 ##Set minimum size for analysis in thousand sq.ft. for non-warehouse classified
-sq_ft_threshold_WH <- 43560
+##FIXME - should be acreage based
+sq_ft_threshold_WH <- 28000
 sq_ft_threshold_maybeWH <- 150000
 
 ##Try to import LA County data
@@ -269,7 +270,7 @@ gc()
 #str(final_parcels)
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
-final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_LA_parcels, narrow_OC_parcels) %>%
+final_parcels_28k <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_LA_parcels, narrow_OC_parcels) %>%
   mutate(year_chr = ifelse(year_built <= 1910, 'unknown', year_built),
          year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
   mutate(floorSpace.sq.ft = round(shape_area*0.55, 1),
@@ -291,29 +292,9 @@ final_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_L
     floorSpace.sq.ft >=500000 & floorSpace.sq.ft < 1000000 ~'500,000 to 1,000,000',
     floorSpace.sq.ft >=1000000 ~ '1,000,000+'
   ))) %>%
-  mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) %>%
-  filter(exclude == 0)
+  mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) #%>%
+ # filter(exclude == 0)
 
-final_parcels$yr_bin <- factor(final_parcels$yr_bin, 
-                                   levels = c(  '1911 - 1972',
-                                                '1972 - 1981',
-                                                '1982 - 1991',
-                                                '1992 - 2001',
-                                                '2002 - 2011',
-                                                '2012 - 2022',
-                                                'unknown'))
-
-final_parcels$size_bin <- factor(final_parcels$size_bin,
-                                 levels = c('28,000 to 100,000',
-                                   '100,000 to 250,000',
-                                    '250,000 to 500,000',
-                                    '500,000 to 1,000,000',
-                                    '1,000,000+'))
-
-summary_counts <- final_parcels %>%
-  as.data.frame() %>%
-  group_by(class, type) %>%
-  summarize(count = n(), summed = sum(floorSpace.sq.ft), .groups = 'drop')
 
 rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_SBDCo_parcels2,
    parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels,
@@ -325,17 +306,34 @@ rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SB
 setwd(wd) 
 source('QA_list.R')
 
-final_parcels <- final_parcels %>%
+final_parcels_28k <- final_parcels_28k %>%
   filter(apn %ni% not_warehouse) #%>%
-##FIXME if 1 acre threshold is important
-gc()
 ##Check for warehouse duplicates by location
 
-u <- st_equals(final_parcels, retain_unique = TRUE)
-unique <- final_parcels[-unlist(u),] %>% 
+u <- st_equals(final_parcels_28k, retain_unique = TRUE)
+unique <- final_parcels_28k[-unlist(u),] %>% 
   st_set_geometry(value = NULL)
 
 rm(ls = u, unique, SBD_codes, code_desc, parcels_manual_wh)
+
+final_parcels <- filter(final_parcels_28k, exclude == 0)
+
+final_parcels$yr_bin <- factor(final_parcels$yr_bin, 
+                               levels = c(  '1911 - 1972',
+                                            '1972 - 1981',
+                                            '1982 - 1991',
+                                            '1992 - 2001',
+                                            '2002 - 2011',
+                                            '2012 - 2022',
+                                            'unknown'))
+
+final_parcels$size_bin <- factor(final_parcels$size_bin,
+                                 levels = c('28,000 to 100,000',
+                                            '100,000 to 250,000',
+                                            '250,000 to 500,000',
+                                            '500,000 to 1,000,000',
+                                            '1,000,000+'))
+gc()
 
 ##import 
 setwd(wd)
@@ -377,7 +375,11 @@ planned_final <- planned_tidy %>%
   select(-row) %>% 
   mutate(floorSpace.sq.ft = 0.55*shape_area)
 
-rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2)
+setwd(output_dir)
+st_write(final_parcels_28k, 'final_parcels_28k.geojson')
+
+rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2,
+   final_parcels_28k)
 ##Add data and stats for joining here
 ##FIXME
 
@@ -395,5 +397,6 @@ unlink('plannedParcels.geojson')
 st_write(final_parcels, 'finalParcels.geojson', append = FALSE)
 st_write(planned_final, 'plannedParcels.geojson', append = FALSE)
 setwd(wd)
+
 
 
