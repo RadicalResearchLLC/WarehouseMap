@@ -272,17 +272,16 @@ gc()
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
 final_parcels_28k <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_LA_parcels, narrow_OC_parcels) %>%
   mutate(year_chr = ifelse(year_built <= 1910, 'unknown', year_built),
-         year_built = ifelse(year_built <= 1910, 1910, year_built)) %>%
+         year_built = ifelse(year_built <= 1980, 1980, year_built)) %>%
   mutate(floorSpace.sq.ft = round(shape_area*0.55, 1),
          shape_area = round(shape_area, 0)) %>%
   #filter(floorSpace.th.sq.ft > 100) %>%
   mutate(yr_bin = as.factor(case_when(
-  year_built < 1972 & year_built > 1910 ~ '1911 - 1972',
-  year_built >= 1972 & year_built < 1982 ~ '1972 - 1981',
+  year_built > 1910 & year_built < 1982 ~ '1910 - 1981',
   year_built >= 1982 & year_built < 1992 ~ '1982 - 1991',
   year_built >= 1992 & year_built < 2002 ~ '1992 - 2001',
   year_built >= 2002 & year_built < 2012 ~ '2002 - 2011',
-  year_built >= 2012 & year_built <= 2022 ~ '2012 - 2022',
+  year_built >= 2012 & year_built <= 2023 ~ '2012 - 2023',
   year_built == 1910 ~ 'unknown'
 ))) %>%
   mutate(size_bin = as.factor(case_when(
@@ -319,12 +318,11 @@ rm(ls = u, unique, SBD_codes, code_desc, parcels_manual_wh)
 final_parcels <- filter(final_parcels_28k, exclude == 0)
 
 final_parcels$yr_bin <- factor(final_parcels$yr_bin, 
-                               levels = c(  '1911 - 1972',
-                                            '1972 - 1981',
+                               levels = c(  '1911 - 1981',
                                             '1982 - 1991',
                                             '1992 - 2001',
                                             '2002 - 2011',
-                                            '2012 - 2022',
+                                            '2012 - 2023',
                                             'unknown'))
 
 final_parcels$size_bin <- factor(final_parcels$size_bin,
@@ -373,15 +371,30 @@ planned_final <- planned_tidy %>%
   st_as_sf() %>% 
   st_transform(crs=4326)  %>% 
   select(-row) %>% 
-  mutate(floorSpace.sq.ft = 0.55*shape_area)
+  mutate(floorSpace.sq.ft = 0.55*shape_area) %>% 
+  rename(category = class)
 
 setwd(output_dir)
+unlink('final_parcels_28k.geojson')
 st_write(final_parcels_28k, 'final_parcels_28k.geojson')
 
 rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2,
    final_parcels_28k)
 ##Add data and stats for joining here
-##FIXME
+
+combo1 <- final_parcels %>% 
+  mutate(category = 'Existing',
+         unknown = ifelse(year_chr == 'unknown', TRUE, FALSE)) %>% 
+  select(apn, shape_area, category, year_built, class, county, geometry, unknown) 
+  
+combo2 <- planned_final %>% 
+  mutate(class = 'TBD', unknown = TRUE) %>% 
+  select(name, shape_area, category, year_built, class, county, geometry, unknown) %>% 
+  rename(apn = name)
+
+combo_final <- bind_rows(combo1, combo2)
+rm(ls = combo1, combo2, IEcounties)
+
 
 setwd(app_dir)
 save.image('.RData')
