@@ -234,8 +234,8 @@ filteredParcels1 <- reactive({
       dplyr::filter(year_built <= input$year_slider) %>%
       mutate(shape_area = round(shape_area, 0))
   } else {
-    selectedYears <- combo_final %>%#f
-     # dplyr::filter(year_chr != 'unknown') %>%
+    selectedYears <- combo_final %>%
+      dplyr::filter(unknown == FALSE) %>%
       dplyr::filter( year_built <= input$year_slider) %>%
       mutate(shape_area = round(shape_area, 0))
   }
@@ -364,7 +364,11 @@ output$Summary <- renderDataTable(
   SumStats(), 
   caption  = 'This interactive map shows the logistics industry footprint in Los Angeles, Riverside, and San Bernardino Counties.  Zoom in and/or click an area to see specific community impacts. Summary statistics are estimates based on best available information. Please see Readme tab for more information on methods and data sources.',
   rownames = FALSE, 
-  options = list(dom = '') 
+  options = list(dom = 'Bt',
+                 buttons = list( 
+                   list(extend = 'csv', filename = paste('SummaryStats', sep='-')),
+                   list(extend = 'excel', filename =  paste("SummaryStats", sep = "-")))),
+  extensions = c('Buttons') 
 )
 
 }
