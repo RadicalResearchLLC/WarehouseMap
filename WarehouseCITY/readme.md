@@ -1,8 +1,8 @@
-# Warehouse CITY Documentation (alpha v1.11 - released December 28, 2022)
+# Warehouse CITY Documentation (beta v1.12 - released April 11, 2023)
 
 # Introduction
 
-The Warehouse CITY (communitY Cumulative Impact Tool) dashboard is a tool developed to help visualize and quantify the warehouse footprint and environmental impact in Southern California. This dashboard is a result of a collaboration between the Redford Conservancy at Pitzer College and Radical Research LLC. The goal of this tool is to help community organizations understand and quantify the cumulative impacts of existing and planned warehouses. It builds off work done at the Redford Conservancy and published in the [Los Angeles Times](https://www.latimes.com/opinion/story/2022-05-01/inland-empire-warehouse-growth-map-environment).
+The Warehouse CITY (**C**umulative **I**mpact **T**ool for communit**Y**) dashboard is a tool developed to help visualize and quantify the warehouse footprint and environmental impact in Southern California. This dashboard is a result of a collaboration between the Redford Conservancy at Pitzer College and Radical Research LLC. The goal of this tool is to help community organizations understand and quantify the cumulative impacts of existing and planned warehouses. It builds off work done at the Redford Conservancy and published in the [Los Angeles Times](https://www.latimes.com/opinion/story/2022-05-01/inland-empire-warehouse-growth-map-environment).
 
 # Navigating the tool
 
@@ -10,25 +10,25 @@ The Warehouse CITY (communitY Cumulative Impact Tool) dashboard is a tool develo
 
 ### Summary stats table
 
-Directly above the map is a table that provides summary statistics for the user selected warehouses. The summary table includes the count of warehouses, the acreage of the warehouse footprint, the total warehouse floor space in square feet, the number of estimated daily truck trips, and an estimate of the daily diesel PM<sub>2.5</sub>, NO<sub>x</sub>, and CO<sub>2</sub> emissions from those truck trips. The table updates as the user selects different year ranges, clicks on different sections of the map, chooses  jurisdiction(s), or enters advanced user inputs. Note that this estimate does not include car trips to and from warehouses in the emissions calculation, nor does it include truck idling emissions. The details on these calculations are discussed in the Methods section.
+Directly above the map is a table that provides summary statistics for the user selected built warehouses. The summary table includes the count of warehouses, the acreage of the warehouse footprint, the total warehouse floor space in square feet, the number of estimated daily truck trips, and an estimate of the daily diesel PM<sub>2.5</sub>, NO<sub>x</sub>, and CO<sub>2</sub> emissions from those truck trips. The table updates as the user selects different year ranges, clicks on different sections of the map, chooses  jurisdiction(s), or enters advanced user inputs. Note that this estimate does not include car trips to and from warehouses in the emissions calculation, nor does it include truck idling emissions. Finally, it separates estimates for existing warehouses (already built) and planned, approved, or under construction warehouses which aren't yet in service. The details on these calculations are discussed in the Methods section.
 
 ### Map
 
-The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left corner of the map. At the top right of the map, the imagery can be switched between a street level **Basemap** and aerial **Imagery**. Polygon overlays can be turned on or off by selecting the check boxes for **Warehouses**, **Jurisdictions**, **Circle**, **Size bins**, **Rail**, **CalEnviroScreen**, and **Diesel PM**. Clicking within the map draws a gray circle with a user selected radius defaulting to 5 km (~3.1 miles). This circle is used to identify nearby warehouses that are cumulatively affecting the selected area's air quality and truck traffic. Size bins colors the warehouse polygons into five size bins based on building floor space square footage (Sq.ft.). The **Rail** layer indicates rail lines and railyards through the open source [OpenRailwayMap](https://www.openrailwaymap.org/) providerTile.
+The map can be navigated using point, click, and drag features or by clicking on the zoom plus and minus buttons on the top left corner of the map. At the top right of the map, the imagery can be switched between a street level **Basemap** and aerial **Imagery**. Polygon overlays can be turned on or off by selecting the check boxes for **Warehouses**, **Jurisdictions**, **Circle**, **Rail**, and **CalEnviroScreen**. Clicking within the map draws a gray circle with a user selected radius defaulting to 5 km (~3.1 miles). This circle is used to identify nearby warehouses that are cumulatively affecting the selected area's air quality and truck traffic. The **Rail** layer indicates rail lines and railyards through the open source [OpenRailwayMap](https://www.openrailwaymap.org/) providerTile.
 
-The **CalEnviroScreen** overlay provides a color-coded overlay of census tracts and their associated pollution burden percentile score. These scores are based on the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40). Darker colors indicate higher impact of pollution and socioeconomic disadvantage. Mousing over census tracts displays the census tract number, population, and percentile score (0-100).
+The **Warehouses** overlay provides a red and maroon layer of existing and planned, approved, and under construction warehouses in the Inland Empire Counties.  This dataset is still in development and is not complete.  Polygons for planned warehouses were drawn based on publicly available documents from [CEQANET](https://ceqanet.opr.ca.gov/Search/Recent) or city/county environmental documents. These warehouse polygons are for informational purposes only and should be checked on CEQANET to insure that they are up to date and reflect the most up-to-date information on individual projects.
 
-The **Diesel PM** overlay provides a gray-scale overlay of census tract specific Diesel PM percentiles. The **Diesel PM** overlay was created by [California Air Resources Board](https://ww2.arb.ca.gov/) and is part of the CalEnviroScreen tool. Diesel PM emissions are based on the 2012 Southern California Association of Governments [SCAG](https://gisdata-scag.opendata.arcgis.com/) MPO data (v7) for vehicle activity/traffic flow; this does not capture the explosive growth in warehouse-induced truck traffic in the Inland counties in the last decade. Distributions of diesel PM in this layer are the most recent available as part of CARB gridded inventories. Full details on this layer are in the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40).
+The **CalEnviroScreen** overlay provides a color-coded overlay of census tracts and their associated pollution burden percentile score. These scores are based on the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40). Darker colors indicate higher impact of pollution and socioeconomic disadvantage. Mousing over census tracts displays the census tract number, population, and percentile score (0-100). Full details on this layer are in the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40).
 
 ## Warehouse Selection Filters
 
 ### Jurisdictions Selection Menu
 
-The dropdown menu allows the user to select and display the jurisdictional boundary of cities, unincorporated counties, and land-use authorities in the four county region. Jurisdiction names are alphabetical and can be manually selected or typed into the box. Once selected, the city selection will filter the summary stats table and selection radius to only include warehouses within the selected jurisdictional boundaries. Jurisdictions can be "unselected" by deleting the named selection. 
+The dropdown menu allows the user to select and display the jurisdictional boundary of cities, unincorporated counties, and land-use authorities in the four county region. Jurisdiction names are alphabetical and can be manually selected or typed into the box. Once selected, the city selection will filter the summary stats table and selection radius to only include warehouses within the selected jurisdictional boundaries. Jurisdictions can be "unselected" by deleting the named selection. Jurisdictional boundaries were obtained from California's [Open Data Portal](https://data.ca.gov)  November, 2022, Southern California Association of Government's [SCAG](https://gisdata-scag.opendata.arcgis.com/datasets/27b134459761486991f0b72f8a9a67c5_0) city boundary list, and a personal records request to the County of Riverside for March JPA's boundary in October, 2022.  
 
 ### Year built slider 
 
-The slider with the year ranges from 1910 to 2022 allows a user to select subsets of warehouses with build years within a user-determined range. For example, if the user selects 2011 to 2021 all warehouses with build years in that range are selected and displayed on the map and data tables. Note that approximately 400 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1910 for selection purposes in the slider tool.
+The slider with the year ranges from 1980 to 2022 allows a user to select subsets of warehouses with build years within a user-determined range. For example, if the user selects 2011 to 2021 all warehouses with build years in that range are selected and displayed on the map and data tables. All warehouses built prior to 1980 are set as 1980 build years for the purpose of this dashboard display but raw data can be provided for build years upon request.  Note that approximately 400 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1980 for selection purposes in the slider tool.
 
 ### Circle (radius in km) slider
 
@@ -40,7 +40,7 @@ Selecting the checkbox displays set of numeric input options for advanced users 
 
 #### Floor area ratio
 
-The floor area ratio is the value used to estimate warehouse building square feet from parcel areas.  Values between 0.05 and 1 are allowed. 
+The floor area ratio is the value used to estimate warehouse building square feet from parcel areas. Values between 0.05 and 1 are allowed. The value defaults to 0.55.
 
 #### Truck Trips per 1,000 sq.ft. 
 
@@ -64,20 +64,20 @@ Parcel data was obtained from publicly available data warehouses maintained by t
 
 -   [Riverside County Open Data](https://gis2.rivco.org/)
 -   [San Bernardino County Open Data](https://open.sbcounty.gov/datasets/countywide-parcels/about)
--   [Los Angeles County Open Data](https://data.lacounty.gov/datasets/assessor-parcels-data-2006-thru-2021/about)
+-   [Los Angeles County Open Data](https://data.lacounty.gov/datasets/assessor-parcels-data-2006-thru-2021/explore)
 -   Personal communications with staff at OC Public Works; <https://www.ocpublicworks.com/>
 
-Parcel shapefiles were obtained November 21, 2022 for Riverside, San Bernardino County, and LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel.
+Parcel shapefiles were obtained March 27, 2023 for Riverside and San Bernardino Counties, November 21, 2022 for LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel.
 
 Emissions factor pollution estimates for heavy-duty trucks (GVWR > 8,500 pounds) were generated from a VMT weighted calculation of EMFAC2021 based on Southern California Air Quality Management District fleet specific data for 2022 downloaded from <https://arb.ca.gov/emfac/> on October 23, 2022. Data and methodology for these fleet-average calculations is available upon request.   
 
 # Methods
 
-Warehouses were selected for display if their total parcel size was over 1 acre, which our method estimates to be at least 28,000 square feet of floor space (see next paragraph). Parcels that are in the _light industrial_ classification were selected for display if their total parcel size was greater than 150,000 sq.ft. Different cutoffs were applied to avoid including large numbers of small parcels that may potentially be misclassified.
+Warehouses were selected for display if their building size was over 1 acre, which our method estimates to be at least 79,200 square feet of total footprint, with a FAR of 0.55. Parcels that are in the _light industrial_ classification were selected for display if their total parcel size was greater than 150,000 sq.ft. Different cutoffs were applied to avoid including large numbers of small parcels that may potentially be misclassified.
 
-Parcel areas as reported in the assessor databases include total square footage of the parcel footprint. Warehouse building space footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage. Our default estimate for building floor space is a floor-area ratio (**FAR**) of **0.65**, which is consistent with industrial zoning in some jurisdictions in Riverside County.
+Parcel areas as reported in the assessor databases include total square footage of the parcel footprint. Warehouse building space footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage. Our default estimate for building floor space is a floor-area ratio (**FAR**) of **0.55**, which is consistent with industrial zoning in some jurisdictions in Riverside County.
 
-Default truck trip estimates are based on South Coast Air Quality Management District indirect warehouse source rule requirements for warehouses greater than 100,000 sq.ft. without truck trip counts [Rule 2305](http://www.aqmd.gov/docs/default-source/rule-book/reg-xxiii/r2305.pdf?sfvrsn=15). The alpha version of the dashboard uses the default weighted truck trip rate of 0.67 heavy duty truck trips per thousand sq.ft of building space from Rule 2305. As noted earlier, the assessor database sq.ft. for the parcel has a 0.65 multiplier to the parcel area to estimate the indoor building area. Thus, the calculation for truck trips is shown below.
+Default truck trip estimates are based on South Coast Air Quality Management District indirect warehouse source rule requirements for warehouses greater than 100,000 sq.ft. without truck trip counts [Rule 2305](http://www.aqmd.gov/docs/default-source/rule-book/reg-xxiii/r2305.pdf?sfvrsn=15). The alpha version of the dashboard uses the default weighted truck trip rate of 0.67 heavy duty truck trips per thousand sq.ft of building space from Rule 2305. As noted earlier, the assessor database sq.ft. for the parcel has a 0.55 multiplier to the parcel area to estimate the indoor building area. Thus, the calculation for truck trips is shown below.
 
 ```{r}
 Parcel.Area * FAR * Truck.Trip.Estimate / 1000 = Truck.trips.per.day
@@ -99,16 +99,19 @@ The final code for calculating the selected warehouses square footage, truck tri
 ## calculate summary stats
 
 SumStats <- reactive({
+  req(parcelDF_circle())
+  
   parcelDF_circle() %>%
+    group_by(category) %>% 
     summarize(Warehouses = n(), 'Warehouse Acreage' = round(sum(acreage), 0), 
-              Total.Bldg.Sq.ft = round(sum(acreage*input$FAR*43560), 0)) %>%
-    mutate(Truck.Trips = round(input$TruckPerTSF*0.001*Total.Bldg.Sq.ft ,0)) %>%
+              Total.Bldg.Sq.ft = round(sum(acreage*input$FAR*43560), -5), .groups = 'drop') %>%
+    mutate(Truck.Trips = round(input$TruckPerTSF*0.001*Total.Bldg.Sq.ft ,-3)) %>%
     mutate('Daily Diesel PM (pounds)' = round(input$avgVMT*Truck.Trips*input$DPMperMile,1),
            'Daily NOx (pounds)' = round(input$avgVMT*Truck.Trips*input$NOxperMile, 0),
-           'Daily CO2 (pounds)' = round(input$avgVMT*Truck.Trips*input$CO2perMile, 0)) %>%
-    rename('Warehouse floor space (Sq.Ft.)' = Total.Bldg.Sq.ft,  'Daily Truck trips' = Truck.Trips)
+           'Daily CO2 (metric tons)' = round(input$avgVMT*Truck.Trips*input$CO2perMile*0.000453592, 1)) %>%
+    rename('Warehouse floor space (Sq.Ft.)' = Total.Bldg.Sq.ft,  'Daily Truck trips' = Truck.Trips,
+           Category = category)
 })
-
 
 ```
 
@@ -122,14 +125,16 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
 -   **Emissions calculations** - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not readily available at the time but could be incorporated in later versions if individual facility information becomes available through the SCAQMD Rule 2305 reporting.
 
+-  **Planned and Approved Warehouses** - the new planned and approved warehouses list is a piecemeal effort to identify warehouses in the development phase. This is not a comprehensive list, as only about 10 jurisdictions have been thoroughly surveyed to compile the data - these jurisdictions include the Cities of Ontario, Fontana, Rialto, San Bernardino, Redlands, Riverside, Moreno Valley, Perris, Beaumont, and Colton; the unincorporated county areas of Riverside and San Bernardino, the March Joint Powers Authority, and Inland Valley Development Agency. There are many jurisdictions in the Inland Empire that we have not yet investigated or compiled into our existing list; this list is incomplete and an _underestimate_ of future warehouse development in the region.    
+
 -   **Orange County data** - Assessor parcel data is not directly from the assessor's office and is likely less reliable than the other three counties as a result. It is also older and less complete.\
 
--   **Idling at warehouses** - No emissions estimate is made for idling of diesel vehicles at warehouses. This may be the largest local impact of warehouses for people living, working, attending school, or exercising adjacent to warehouses. Most jurisdictions have anti-idling rules prohibiting idling for more than 5 minutes, but enforcement is usually complaint-based.
+-   **Idling at warehouses** - No emissions estimate is made for idling of diesel vehicles at warehouses. This may be the largest local impact of warehouses for people living, working, attending school, or exercising adjacent to warehouses. Most jurisdictions have anti-idling rules prohibiting idling for more than 5 minutes, but enforcement is usually complaint-based rather than systematically monitored by the municipality.
 
 -   **Errata**
 
     -   We are working to improve the parcel information for this entire dataset. If you have any information on individual parcels that you believe are currently misclassified, please contact us at the email below and we'll work to improve our classification.\
-    -   A large number (8,644) of sub 1-acre warehouses are excluded from this analysis as the application slows down significantly when displaying these micro-warehouses. The total area of the warehouses with less than 1-acre parcels is 1.7x10<sup>8</sup> sq.ft.\
+    -   A large number (12,000+) of sub 1-acre warehouses are excluded from this analysis as the application slows down significantly when displaying these micro-warehouses. The total area of the warehouses with less than 1-acre buildings is approximately 2.7x10<sup>8</sup> sq.ft.\
     -   No estimate is made for emissions light-duty vehicle trips of workers commuting to and from warehouses.\
     -   No estimate is made for emissions from light-duty or medium duty vehicle trips of delivery vehicles to and from warehouses.  The cutoff for trucks is GVWR > 8,500 pounds per EMFAC classification.  
     -   San Bernardino "build year" values are now based on [DataTree](https://web.datatree.com/) parcel classifications of build year, rather than 'assessor base year' estimates from the San Bernardino County Open Data shapefiles.  
