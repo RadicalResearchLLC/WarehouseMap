@@ -13,8 +13,8 @@ library(tidyverse)
 library(DT)
 library(markdown)
 
-deploy_date <- 'December 28, 2022'
-version <- 'Warehouse CITY v1.11, last updated'
+deploy_date <- 'April 11, 2023'
+version <- 'Warehouse CITY v1.12, last updated'
 ## Define UI for application that displays warehouses
 # Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
@@ -39,9 +39,9 @@ ui <- fluidPage(title = 'Warehouse CITY',
               selectizeInput(inputId = 'City', label = 'Jurisdictions - Select up to 5',
                  choices = c('', sort(jurisdictions$name)), options = list(maxItems = 5)),
               sliderInput('year_slider', 'Year built', 
-               min = min(final_parcels$year_built), max(final_parcels$year_built), 
-            #How does this break if I make the min year 1972?
-               value = range(final_parcels$year_built), step = 1, sep =''),
+                min = min(combo_final$year_built), 
+                max(combo_final$year_built), 
+                value = 2025, step = 5, sep =''),
              checkboxInput(inputId = 'UnknownYr', 
                 label = 'Display parcels with unknown year built', value = TRUE),
              sliderInput('radius', 'Circle (radius in km)', min = 1, max = 10, value = 5, step =1),
@@ -53,7 +53,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
             ),
             conditionalPanel("input.Z == true",
                 
-                numericInput(inputId = 'FAR', label = 'Floor area ratio - (0.05 to 1)', value = 0.65,
+                numericInput(inputId = 'FAR', label = 'Floor area ratio - (0.05 to 1)', value = 0.55,
                          min = 0.05, max = 1.0, step = 0.05, width = '200px'),
                 numericInput(inputId = 'TruckPerTSF', label = 'Truck Trips per 1,000 sq.ft. (0.1 to 1.5)', value = 0.67,
                          min = 0.1, max = 1.5, step = 0.01, width = '200px'),
@@ -101,51 +101,42 @@ output$map <- renderLeaflet({
       addProviderTiles(providers$OpenRailwayMap, group = 'Rail') %>%
       addProviderTiles(providers$CartoDB.Positron, group = 'Basemap') %>% 
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
-        overlayGroups = c('Warehouses', 'Jurisdictions', 'Circle', 'Size bins', 
-                           'Rail', 'CalEnviroScreen', 'Diesel PM'), # 'SCAQMD boundary',
-        options = layersControlOptions(collapsed = FALSE)
+        overlayGroups = c('Warehouses', 'Jurisdictions',
+                          'Circle', 'Rail', 'CalEnviroScreen'), 
+        options = layersControlOptions(collapsed = FALSE),
+        position = 'topright'
         )  %>%
-      addLegend(pal = paletteSize, 
-                values = c('28,000 to 100,000',  
-                           '100,000 to 250,000',
-                           '250,000 to 500,000',
-                           '500,000 to 1,000,000',
-                           '1,000,000+'),
-                title = 'Size bins (Sq.ft.)',
-                group = 'Size bins') %>% 
-      addLegend(data = CalEJ4,
-                pal = palDPM, 
-                title = 'Diesel PM (%)', 
-                values = ~DieselPM_P,
-                group = 'Diesel PM') %>% 
+      #addLegend(pal = paletteSize, 
+      #          values = c('28,000 to 100,000',  
+      #                     '100,000 to 250,000',
+      #                     '250,000 to 500,000',
+      #                     '500,000 to 1,000,000',
+      #                     '1,000,000+'),
+      #          title = 'Size bins (Sq.ft.)',
+      #          group = 'Size bins') %>% 
       addLegend(data = CalEJ4,
                 group = 'CalEnviroScreen',
                 title = 'CalEnviroScreen Score',
                 values = ~CIscoreP,
                 pal = qpal) %>% 
+      addLegend(data = filteredParcels(),
+                pal = WHPal,
+                title = 'Status',
+                values = ~category,
+                group = 'Warehouses',
+                position = 'bottomright') %>% 
       addMapPane('Jurisdictions', zIndex = 390) %>% 
       addMapPane('Circle', zIndex = 395) %>% 
       addMapPane('Warehouses', zIndex = 410) %>% 
-      addMapPane('Size bins', zIndex = 420) %>% 
-      addMapPane('CalEnviroScreen', zIndex = 400) %>% 
-      addMapPane('Diesel PM', zIndex = 405)
-    
-    map1 %>% hideGroup(c('Rail', 'CalEnviroScreen', 'Diesel PM', 'Size bins'))
+      addMapPane('CalEnviroScreen', zIndex = 400) #%>% 
+      map1 %>% hideGroup(c('Rail', 'CalEnviroScreen', 'Size bins'))
     })
 
-OrBr <- c('beige' = '#EEE1B1',
-          'gold' = '#CF7820',
-          'carrot' = '#A94915',
-          'rust' = '#8D3312',
-          'brown' = '#5F1003')
-
-paletteSize <- colorFactor(OrBr,
-                 levels = c('28,000 to 100,000',  
-                            '100,000 to 250,000',
-                            '250,000 to 500,000',
-                            '500,000 to 1,000,000',
-                            '1,000,000+'), 
-                  reverse = FALSE)
+#OrBr <- c('beige' = '#EEE1B1',
+#          'gold' = '#CF7820',
+#          'carrot' = '#A94915',
+#          'rust' = '#8D3312',
+#          'brown' = '#5F1003')
 
 #Circle select
 observe({
@@ -191,55 +182,46 @@ observe({
                   round(CIscoreP, 0), '; population ', TotPop19)),
                 group = 'CalEnviroScreen')
 })
-#Diesel PM census tracts
-palDPM <- colorQuantile(palette = 'Greys', domain = CalEJ4$DieselPM_P, n = 5)
 
-observe({
-  leafletProxy("map", data = CalEJ4) %>%
-    clearGroup(group = 'Diesel PM') %>%
-    addPolygons(color = ~palDPM(DieselPM_P), 
-                stroke = FALSE,
-                fillOpacity = 0.5,
-                fillColor = ~palDPM(DieselPM_P),
-                group = 'Diesel PM')
-})
+WHPal <- colorFactor(palette = c('red', 'maroon'), domain = combo_final$category)
 
-# Warehouses base
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
     clearGroup(group = 'Warehouses') %>%
-    addPolygons(color = 'gray', #'#8D3312',
-                fillColor = 'red', #'#A94915',
-                weight = 1.5,
-                fillOpacity = 0.8,
+    addPolygons(color = ~WHPal(category), 
+                weight = 1,
+                fillOpacity = 0.5,
                 group = 'Warehouses',
-                label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_chr)))
+                label = ~htmlEscape(paste(apn, class, round(shape_area,-3), ' sq.ft.',  year_built))) 
 })
 
 #Warehouse size bins
-observe({
-  leafletProxy("map", data = filteredParcels()) %>%
-    clearGroup(group = 'Size bins') %>%
-    addPolygons(color = '#8D3312',
-                fillColor = ~paletteSize(size_bin),
-                weight = 1,
-                fillOpacity = 0.8,
-                group = 'Size bins',
-                label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_chr)))
-})
+#observe({
+#  leafletProxy("map", data = filteredParcels()) %>%
+#    clearGroup(group = 'Size bins') %>%
+#    addPolygons(color = '#8D3312',
+#                fillColor = ~paletteSize(size_bin),
+#                weight = 1,
+#                fillOpacity = 0.8,
+#                group = 'Size bins',
+#                label = ~htmlEscape(paste('Parcel', apn, ';', round(shape_area,0), 'sq.ft.', class, year_chr)))
+#})
 
 ## Generate a data table of warehouses in selected reactive data
 output$warehouseDF <- DT::renderDataTable(
   parcelDF_circle() %>% 
-  rename('Assessor parcel number' = parcel.number, 'Building classification' = class, Acres = acreage,
-           'Year built' = year_built, 'Building sq.ft.' = Sq.ft.) %>% 
-  select(-type), 
+  rename(Category = category, 'Assessor parcel number' = parcel.number, 'Building classification' = class, Acres = acreage,
+           'Year built' = year_built, 'Building sq.ft.' = Sq.ft.), 
+  #select(-type), 
   server = FALSE,
   caption  = 'Warehouse list by parcel number, square footage, and year built',
   rownames = FALSE, 
-  options = list(dom = 'Btp',
+  options = list(
+    dom = 'Btp',
     pageLength = 10,
-    buttons = c('csv','excel')),
+    buttons = list( 
+      list(extend = 'csv', filename = paste('Warehouse_List', sep='-')),
+      list(extend = 'excel', filename =  paste("Warehouse_List", sep = "-")))),
   extensions = c('Buttons'),
   filter = list(position = 'top', clear = FALSE)
 )
@@ -248,13 +230,13 @@ output$warehouseDF <- DT::renderDataTable(
 # First select parcels based on checkbox and year range input
 filteredParcels1 <- reactive({
   if(input$UnknownYr == TRUE) {
-    selectedYears <- final_parcels %>%
-      dplyr::filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
+    selectedYears <- combo_final %>%
+      dplyr::filter(year_built <= input$year_slider) %>%
       mutate(shape_area = round(shape_area, 0))
   } else {
-    selectedYears <- final_parcels %>%
-      dplyr::filter(year_chr != 'unknown') %>%
-      dplyr::filter(year_built >= input$year_slider[1] & year_built <= input$year_slider[2]) %>%
+    selectedYears <- combo_final %>%#f
+     # dplyr::filter(year_chr != 'unknown') %>%
+      dplyr::filter( year_built <= input$year_slider) %>%
       mutate(shape_area = round(shape_area, 0))
   }
   return(selectedYears)
@@ -329,9 +311,9 @@ nearby_warehouses <- reactive({
     st_set_geometry(value = NULL) %>% 
     as.data.frame() %>%
     rename(parcel.number = apn) %>%
-    mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
+    mutate(Sq.ft. = round((shape_area*input$FAR), -3),
            acreage = round(shape_area/43560, 0)) %>%
-    dplyr::select(parcel.number, class, type, year_built, acreage, Sq.ft.) %>%
+    dplyr::select(category, parcel.number, class, year_built, acreage, Sq.ft.) %>%
     arrange(desc(Sq.ft.))
   
   return(nearby)
@@ -343,9 +325,9 @@ parcelDF_circle <- reactive({
     warehouse2 <- filteredParcels() %>%
       as.data.frame() %>%
       rename(parcel.number = apn) %>%
-      mutate(Sq.ft. = round(floorSpace.sq.ft, 0),
+      mutate(Sq.ft. = round((shape_area*input$FAR), -3),
              acreage = round(shape_area/43560, 0)) %>%
-      dplyr::select(parcel.number, class, type, year_built, acreage, Sq.ft.) %>%
+      dplyr::select(category, parcel.number, class, year_built, acreage, Sq.ft.) %>%
       arrange(desc(Sq.ft.)) 
   }
   else {
@@ -363,14 +345,18 @@ parcelDF_circle <- reactive({
 ## calculate summary stats
 
 SumStats <- reactive({
+  req(parcelDF_circle())
+  
   parcelDF_circle() %>%
+    group_by(category) %>% 
     summarize(Warehouses = n(), 'Warehouse Acreage' = round(sum(acreage), 0), 
-              Total.Bldg.Sq.ft = round(sum(acreage*input$FAR*43560), 0)) %>%
-    mutate(Truck.Trips = round(input$TruckPerTSF*0.001*Total.Bldg.Sq.ft ,0)) %>%
+              Total.Bldg.Sq.ft = round(sum(acreage*input$FAR*43560), -5), .groups = 'drop') %>%
+    mutate(Truck.Trips = round(input$TruckPerTSF*0.001*Total.Bldg.Sq.ft ,-3)) %>%
     mutate('Daily Diesel PM (pounds)' = round(input$avgVMT*Truck.Trips*input$DPMperMile,1),
            'Daily NOx (pounds)' = round(input$avgVMT*Truck.Trips*input$NOxperMile, 0),
-           'Daily CO2 (pounds)' = round(input$avgVMT*Truck.Trips*input$CO2perMile, 0)) %>%
-    rename('Warehouse floor space (Sq.Ft.)' = Total.Bldg.Sq.ft,  'Daily Truck trips' = Truck.Trips)
+           'Daily CO2 (metric tons)' = round(input$avgVMT*Truck.Trips*input$CO2perMile*0.000453592, 1)) %>%
+    rename('Warehouse floor space (Sq.Ft.)' = Total.Bldg.Sq.ft,  'Daily Truck trips' = Truck.Trips,
+           Category = category)
 })
 
 ##Display summary table
