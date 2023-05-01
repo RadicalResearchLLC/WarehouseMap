@@ -171,30 +171,26 @@ SBD_warehouse_ltInd <- inner_join(SBD_parcels, SBD_codes, by = c('TYPEUSE' = 'us
 ##Import OC data - current parcels are useless
 #sf::st_layers(dsn = OC_dir)
 ##FIXME
-lu_codes <- c('1231', '1323', '1340', '1310')
-OC_parcels <- sf::st_read(dsn=OC_dir, quiet = TRUE, type = 3) %>%
+#lu_codes <- c('1231', '1323', '1340', '1310')
+OC_parcels <- sf::st_read(dsn=paste0(warehouse_dir, '/OC_wh2018.geojson'), quiet = TRUE, type = 3) %>%
   clean_names() %>%
-  select(apn, shape_are, year_adopt, county, scag_gp_co, lu16) %>%
-  filter(lu16 %in% lu_codes)
+  mutate(class = 'warehouse',
+         type = 'warehouse')
 
-class <- c('commercial storage', 'open storage', 'wholesaling and warehousing',
-                          'light industrial')
-type <- c('other', 'other', 'warehouse', 'other')
-code_desc <- data.frame(lu_codes, class, type)
 
 ## Need to convert OC parcel data from XYZ polygon to XY polygon
 narrow_OC_parcels <- OC_parcels %>%
-  left_join(code_desc, (by = c('lu16' = 'lu_codes'))) %>%
-  mutate(shape_area = as.numeric(shape_are),
-         year_built = as.numeric(lubridate::year(year_adopt))) %>%
+ # left_join(code_desc, (by = c('lu16' = 'lu_codes'))) %>%
+  mutate(year_built = 1910) %>%
   #select(apn, shape_area, class, type, geometry, year_built, county) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") %>%
   mutate(type = as.factor(type)) %>%
-  st_zm() %>%
+  #st_zm() %>%
   mutate(threshold = ifelse(shape_area > sq_ft_threshold_maybeWH, 1, 0)) %>%
   mutate(exclude = ifelse(type == 'warehouse', 0,
                           ifelse(threshold == 1, 0, 1))) %>%
   filter(exclude == 0) %>%
+  rename(apn = address) %>% 
   select(apn, shape_area, class, type, geometry, year_built, county) #%>%
 
 ##combine spatial data frames for display
@@ -293,7 +289,6 @@ final_parcels_28k <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narr
   ))) %>%
   mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) #%>%
  # filter(exclude == 0)
-
 
 rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_SBDCo_parcels2,
    parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels,
