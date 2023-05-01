@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified November, 2022
+##Last modified April, 2023
 ##This script preprocesses LA shapefile data because it is very slow and 
 ##this is intended to avoid having to do it multiple times since it only updates quarterly
 ##Also now removes duplicate location APN parcels (~893 APNs)
@@ -46,14 +46,18 @@ LA_industrial_28k_parcels <- LA_warehouse_parcels %>%
   )
   ) %>%
   filter(Shape_Area >= sq_ft_threshold) %>% 
-  select(APN, YearBuilt1, Shape_Area, type, Shape, UseDescription) %>%
+  select(APN, YearBuilt1, Shape_Area, type, Shape, UseDescription, 
+         #SitusAddress, SitusCity, SitusZIP
+         ) %>%
   clean_names() %>%
   mutate(year_built = as.numeric(year_built1),
          class=use_description) %>%
   mutate(year_built = ifelse(is.na(year_built), 1910, 
                              ifelse(year_built < 1911, 1910, year_built))
   ) %>%
-  select(apn, shape_area, class, type, year_built, Shape) %>%
+  select(apn, shape_area, class, type, year_built, Shape, 
+         #situs_address, situs_city, situs_zip
+         ) %>%
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
 rm(ls = LA_warehouse_parcels)
@@ -69,6 +73,8 @@ final_LA <- unique %>%
 rm(ls = u, unique, LA_industrial_28k_parcels)
 
 setwd(LA_tidy)
+unlink('LA_filtered_parcels.shp')
 st_write(final_LA, 'LA_filtered_parcels.shp')
+#st_write(final_LA, 'LA_address.geojson')
 
 setwd(wd)
