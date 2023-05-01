@@ -13,8 +13,8 @@ library(tidyverse)
 library(DT)
 library(markdown)
 
-deploy_date <- 'April 11, 2023'
-version <- 'Warehouse CITY v1.12, last updated'
+deploy_date <- 'May 1, 2023'
+version <- 'Warehouse CITY v1.13, last updated'
 ## Define UI for application that displays warehouses
 # Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
@@ -38,10 +38,11 @@ ui <- fluidPage(title = 'Warehouse CITY',
                     hr(),
               selectizeInput(inputId = 'City', label = 'Jurisdictions - Select up to 5',
                  choices = c('', sort(jurisdictions$name)), options = list(maxItems = 5)),
-              sliderInput('year_slider', 'Year built', 
-                min = min(combo_final$year_built), 
-                max(combo_final$year_built), 
-                value = 2025, step = 5, sep =''),
+              numericInput('year_slider', 'Select warehouses built by', 
+                min = 1980, 
+                max = 2025, 
+                value = 2025,
+                width = '200px'),
              checkboxInput(inputId = 'UnknownYr', 
                 label = 'Display parcels with unknown year built', value = TRUE),
              sliderInput('radius', 'Circle (radius in km)', min = 1, max = 10, value = 5, step =1),
@@ -64,7 +65,9 @@ ui <- fluidPage(title = 'Warehouse CITY',
                 numericInput(inputId = 'NOxperMile', label = 'NOx (lbs/mile)', value = 0.00410,
                          min = 0.0004, max = 0.04, step = 0.0001, width = '200px'),
                 numericInput(inputId = 'CO2perMile', label = 'CO2 (lbs/mile)', value = 2.44,
-                         min = 1, max = 5, step = 0.01, width = '200px')
+                         min = 1, max = 5, step = 0.01, width = '200px'),
+                numericInput(inputId = 'Jobs', label = 'Jobs per acre', value = 8,
+                         min = 4, max = 20, step = 1, width = '200px')
                 
             ),
             hr(),
@@ -349,27 +352,33 @@ SumStats <- reactive({
   
   parcelDF_circle() %>%
     group_by(category) %>% 
-    summarize(Warehouses = n(), 'Warehouse Acreage' = round(sum(acreage), 0), 
+    summarize(Warehouses = n(), Acreage = round(sum(acreage), 0), 
               Total.Bldg.Sq.ft = round(sum(acreage*input$FAR*43560), -5), .groups = 'drop') %>%
     mutate(Truck.Trips = round(input$TruckPerTSF*0.001*Total.Bldg.Sq.ft ,-3)) %>%
     mutate('Daily Diesel PM (pounds)' = round(input$avgVMT*Truck.Trips*input$DPMperMile,1),
            'Daily NOx (pounds)' = round(input$avgVMT*Truck.Trips*input$NOxperMile, 0),
-           'Daily CO2 (metric tons)' = round(input$avgVMT*Truck.Trips*input$CO2perMile*0.000453592, 1)) %>%
+           'Daily CO2 (metric tons)' = round(input$avgVMT*Truck.Trips*input$CO2perMile*0.000453592, 1),
+           'Jobs' = round(input$Jobs*Acreage)) %>%
     rename('Warehouse floor space (Sq.Ft.)' = Total.Bldg.Sq.ft,  'Daily Truck trips' = Truck.Trips,
-           Category = category)
+           Category = category, 'Warehouse count' = Warehouses)
 })
 
 ##Display summary table
 output$Summary <- renderDataTable(
-  SumStats(), 
-  caption  = 'This interactive map shows the logistics industry footprint in Los Angeles, Riverside, and San Bernardino Counties.  Zoom in and/or click an area to see specific community impacts. Summary statistics are estimates based on best available information. Please see Readme tab for more information on methods and data sources.',
-  rownames = FALSE, 
-  options = list(dom = 'Bt',
+  SumStats() %>%  
+    datatable(
+      caption  = 'This interactive map shows the logistics industry footprint in Los Angeles, Riverside, and San Bernardino Counties.  Zoom in and/or click an area to see specific community impacts. Summary statistics are estimates based on best available information. Please see Readme tab for more information on methods and data sources.',
+      rownames = FALSE, 
+      options = list(dom = 'Bt',
                  buttons = list( 
                    list(extend = 'csv', filename = paste('SummaryStats', sep='-')),
                    list(extend = 'excel', filename =  paste("SummaryStats", sep = "-")))),
-  extensions = c('Buttons') 
-)
+      extensions = c('Buttons')
+    ) %>% 
+    formatRound(columns = c(2:5, 7, 9),
+                interval = 3, mark = ',',
+                digits = 0)
+) 
 
 }
 # Run the application 
