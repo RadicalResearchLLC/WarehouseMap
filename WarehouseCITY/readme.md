@@ -1,4 +1,4 @@
-# Warehouse CITY Documentation (beta v1.12 - released April 11, 2023)
+# Warehouse CITY Documentation (beta v1.13 - released May 1, 2023)
 
 # Introduction
 
@@ -10,7 +10,7 @@ The Warehouse CITY (**C**umulative **I**mpact **T**ool for communit**Y**) dashbo
 
 ### Summary stats table
 
-Directly above the map is a table that provides summary statistics for the user selected built warehouses. The summary table includes the count of warehouses, the acreage of the warehouse footprint, the total warehouse floor space in square feet, the number of estimated daily truck trips, and an estimate of the daily diesel PM<sub>2.5</sub>, NO<sub>x</sub>, and CO<sub>2</sub> emissions from those truck trips. The table updates as the user selects different year ranges, clicks on different sections of the map, chooses  jurisdiction(s), or enters advanced user inputs. Note that this estimate does not include car trips to and from warehouses in the emissions calculation, nor does it include truck idling emissions. Finally, it separates estimates for existing warehouses (already built) and planned, approved, or under construction warehouses which aren't yet in service. The details on these calculations are discussed in the Methods section.
+Directly above the map is a table that provides summary statistics for the user selected warehouses. The summary table includes the count of warehouses, the acreage of the warehouse footprint, the total warehouse floor space in square feet, the number of estimated daily truck trips, an estimate of the daily diesel PM<sub>2.5</sub>, NO<sub>x</sub>, and CO<sub>2</sub> emissions from those truck trips, and a jobs estimate. The table updates as the user selects different year ranges, clicks on different sections of the map, chooses  jurisdiction(s), or enters advanced user inputs. Note that this estimate does not include car trips to and from warehouses in the emissions calculation, nor does it include truck idling emissions. Finally, it separates estimates for existing warehouses (already built) and planned, approved, or under construction warehouses which aren't yet in service. The details on these calculations are discussed in the Methods section.
 
 ### Map
 
@@ -26,9 +26,9 @@ The **CalEnviroScreen** overlay provides a color-coded overlay of census tracts 
 
 The dropdown menu allows the user to select and display the jurisdictional boundary of cities, unincorporated counties, and land-use authorities in the four county region. Jurisdiction names are alphabetical and can be manually selected or typed into the box. Once selected, the city selection will filter the summary stats table and selection radius to only include warehouses within the selected jurisdictional boundaries. Jurisdictions can be "unselected" by deleting the named selection. Jurisdictional boundaries were obtained from California's [Open Data Portal](https://data.ca.gov)  November, 2022, Southern California Association of Government's [SCAG](https://gisdata-scag.opendata.arcgis.com/datasets/27b134459761486991f0b72f8a9a67c5_0) city boundary list, and a personal records request to the County of Riverside for March JPA's boundary in October, 2022.  
 
-### Year built slider 
+### Select warehouses built by
 
-The slider with the year ranges from 1980 to 2022 allows a user to select subsets of warehouses with build years within a user-determined range. For example, if the user selects 2011 to 2021 all warehouses with build years in that range are selected and displayed on the map and data tables. All warehouses built prior to 1980 are set as 1980 build years for the purpose of this dashboard display but raw data can be provided for build years upon request.  Note that approximately 400 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1980 for selection purposes in the slider tool.
+The numeric input allows a user to select subsets of warehouses with build years before a selected year. For example, if the user selects 2011 all warehouses with build years up to and including 2011 are displayed. All warehouses built prior to 1980 are set as 1980 build years for the purpose of this dashboard display but raw data can be provided for build years upon request.  Note that approximately 400 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1980 for selection purposes in the slider tool. Similarly, the year 2025 is a proxy for planned or approved warehouses that have not yet been built.
 
 ### Circle (radius in km) slider
 
@@ -52,7 +52,11 @@ This provides the average estimated truck trip length in miles. The value defaul
 
 #### Emissions (Diesel PM, NOx, and CO2)
 
-These three inputs provide the fleet-averaged heavy-duty truck emissions per mile. Default values are 2022 EMFAC fleet-average estimates for the SCAQMD.  
+These three inputs provide the fleet-averaged heavy-duty truck emissions per mile. Default values are 2022 EMFAC fleet-average estimates for the SCAQMD.
+
+#### Jobs per acre
+
+This input allows a user to estimate jobs provided by the selected warehouses at prescribed jobs per acre values.  The default value is 8 jobs per acre as estimated by a bottom-up comparison of Inland Empire warehouse jobs and acres in 2023. Values between 4 and 20 are allowed.  
 
 ### Detailed warehouse table
 
@@ -65,7 +69,7 @@ Parcel data was obtained from publicly available data warehouses maintained by t
 -   [Riverside County Open Data](https://gis2.rivco.org/)
 -   [San Bernardino County Open Data](https://open.sbcounty.gov/datasets/countywide-parcels/about)
 -   [Los Angeles County Open Data](https://data.lacounty.gov/datasets/assessor-parcels-data-2006-thru-2021/explore)
--   Personal communications with staff at OC Public Works; <https://www.ocpublicworks.com/>
+-   Personal communications with staff at OC Public Works; <https://www.ocpublicworks.com/> and data from SCAQMD Rule 2305b Board Package Appendix C.   
 
 Parcel shapefiles were obtained March 27, 2023 for Riverside and San Bernardino Counties, November 21, 2022 for LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel.
 
@@ -127,7 +131,7 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
 -  **Planned and Approved Warehouses** - the new planned and approved warehouses list is a piecemeal effort to identify warehouses in the development phase. This is not a comprehensive list, as only about 10 jurisdictions have been thoroughly surveyed to compile the data - these jurisdictions include the Cities of Ontario, Fontana, Rialto, San Bernardino, Redlands, Riverside, Moreno Valley, Perris, Beaumont, and Colton; the unincorporated county areas of Riverside and San Bernardino, the March Joint Powers Authority, and Inland Valley Development Agency. There are many jurisdictions in the Inland Empire that we have not yet investigated or compiled into our existing list; this list is incomplete and an _underestimate_ of future warehouse development in the region.    
 
--   **Orange County data** - Assessor parcel data is not directly from the assessor's office and is likely less reliable than the other three counties as a result. It is also older and less complete.\
+-   **Orange County data** - Assessor parcel data is not directly from the assessor's office and is likely less reliable than the other three counties as a result. It is also older and less complete. Orange County data should be considered preliminary.\
 
 -   **Idling at warehouses** - No emissions estimate is made for idling of diesel vehicles at warehouses. This may be the largest local impact of warehouses for people living, working, attending school, or exercising adjacent to warehouses. Most jurisdictions have anti-idling rules prohibiting idling for more than 5 minutes, but enforcement is usually complaint-based rather than systematically monitored by the municipality.
 
@@ -135,7 +139,7 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
     -   We are working to improve the parcel information for this entire dataset. If you have any information on individual parcels that you believe are currently misclassified, please contact us at the email below and we'll work to improve our classification.\
     -   A large number (12,000+) of sub 1-acre warehouses are excluded from this analysis as the application slows down significantly when displaying these micro-warehouses. The total area of the warehouses with less than 1-acre buildings is approximately 2.7x10<sup>8</sup> sq.ft.\
-    -   No estimate is made for emissions light-duty vehicle trips of workers commuting to and from warehouses.\
+    -   No estimate is made for emissions from light-duty vehicle trips of workers commuting to and from warehouses.\
     -   No estimate is made for emissions from light-duty or medium duty vehicle trips of delivery vehicles to and from warehouses.  The cutoff for trucks is GVWR > 8,500 pounds per EMFAC classification.  
     -   San Bernardino "build year" values are now based on [DataTree](https://web.datatree.com/) parcel classifications of build year, rather than 'assessor base year' estimates from the San Bernardino County Open Data shapefiles.  
 
