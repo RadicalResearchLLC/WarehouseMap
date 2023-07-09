@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified April, 2023
+##Last modified  July, 2023
 ##This script preprocesses LA shapefile data because it is very slow and 
 ##this is intended to avoid having to do it multiple times since it only updates quarterly
 ##Also now removes duplicate location APN parcels (~893 APNs)
@@ -12,14 +12,14 @@
 #'%ni%' <- Negate('%in%') ## not in operator
 gc()
 
-## Probably only need these two libraries
+## Probably only need these three libraries
 library(tidyverse)
 library(sf)
 library(janitor)
 
 ##set working, data, and app directories
-wd <- getwd()
-warehouse_dir <- paste0(wd, '/Warehouse_data')
+#wd <- getwd()
+#warehouse_dir <- paste0(wd, '/Warehouse_data')
 LA_raw <- paste0(warehouse_dir, '/LACounty_Parcels.gdb')
 LA_tidy <- paste0(warehouse_dir, '/LAfiltered_shp')
 #LA_raw2 <- paste0(warehouse_dir, '/LACounty.gdb')
@@ -110,14 +110,18 @@ LA_Multi <- LA_interMulti |>
 
 final_LA <- bind_rows(LA_unique, LA_Multi)
 
+st_geometry(final_LA) <- 'geometry'
+
+narrow_LA_parcels <- final_LA |> 
+  mutate(type = as.factor(type), county = 'Los Angeles')
+
 rm(ls = u, unique, LA_industrial_28k_parcels, LA_geometry, LA_industrial_parcels_10k,
    LA_parcels_precise, unique2, Geo_only, LA_warehouse_parcels,
-   LA_industrial_parcels, LA_Multi, LA_unique, LA_interMulti)  
+   LA_industrial_parcels, LA_Multi, LA_unique, LA_interMulti, final_LA, uniqueParcel)  
    
-
 setwd(LA_tidy)
 unlink('LA_filtered_parcels.shp')
-st_write(final_LA, 'LA_filtered_parcels.shp')
+st_write(narrow_LA_parcels, 'LA_filtered_parcels.shp')
 #st_write(final_LA, 'LA_address.geojson')
 
 setwd(wd)
