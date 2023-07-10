@@ -3,24 +3,23 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified April, 2023
+##Last modified July, 2023
 ##This script acquires and tidy parcel data for the app
 
 #rm(list =ls()) # clear environment
 '%ni%' <- Negate('%in%') ## not in operator
 gc()
-##Libraries used in data acquisition
-#library(RCurl)
+
 
 ##Libraries used in data processing and visualization
 library(tidyverse)
 library(janitor)
 library(readxl)
-library(googlesheets4)
+
 ##spatial libraries and visualization annotation
-library(leaflet)
+#library(leaflet)
 library(sf)
-library(htmltools)
+#library(htmltools)
 library(rmapshaper)
 
 ##set working, data, and app directories
@@ -30,15 +29,6 @@ wd <- getwd()
 app_dir <- paste0(wd, '/WarehouseCITY')
 warehouse_dir <- paste0(wd, '/Warehouse_data')
 output_dir <- paste0(wd, '/exports_other')
-RivCo1_dir <- paste0(warehouse_dir, '/CREST_tables.gdb')
-RivCo2_dir <- paste0(warehouse_dir, '/ParcelAttributed.gdb')
-SBD_dir <- paste0(warehouse_dir, '/SBD_Parcel')
-OC_dir <- paste0(warehouse_dir, '/OC_parcels')
-##LA data goes through a preprocessing script 2_preprocess_LA_parcels.R
-##This saves time and precious memory in this script
-LA_dir <- paste0(warehouse_dir, '/LAfiltered_shp')
-#AQMD_dir <- paste0(wd, '/SCAQMD_shp')
-#city_dir <- paste0(wd, '/cities')
 calEJScreen_dir <- paste0(wd, '/calenviroscreen40')
 shapefile_dir <- paste0(app_dir, '/shapefile')
 geojson_dir <- paste0(app_dir, '/geoJSON')
@@ -48,218 +38,26 @@ jurisdiction_jur <- paste0(wd, '/community_geojson/')
 #trafficdata_dir <- paste0(wd, '/traffic_data')
 #truck_dir <- paste0(wd, '/TruckTrafficData')
 
-## Acquire warehouse data files
-setwd(warehouse_dir)
-
-gc()
 ##Set minimum size for analysis in thousand sq.ft. for non-warehouse classified
 ##FIXME - should be acreage based
 sq_ft_threshold_WH <- 28000
 sq_ft_threshold_maybeWH <- 150000
 
-##Try to import LA County data
-sf::st_layers(dsn = LA_dir)
-LA_warehouse_parcels <- sf::st_read(dsn = LA_dir, quiet = TRUE, type = 3)  |> 
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+## Process County Data using County Scripts
+
+source('Riverside.R')
+source('SanBernardino.R')
+source('LosAngeles.R')
+source('Orange.R')
 
 gc()
-
-##Import parcels and property record files for Riverside County
-##st_read(type=1) is attempting to create the same sfc type for both counties
-##FIXME - crest property just a table?
-crest_property <- sf::st_read(dsn = RivCo1_dir, layer = 'CREST_PROPERTY_CHAR')
-parcels <- sf::st_read(dsn = RivCo2_dir, layer = 'PARCELS_CREST', quiet = TRUE, type = 3)
-class(st_geometry(parcels))
-##Read and import property record files for San Bernadino County
-sf::st_layers(dsn = SBD_dir)
-SBD_parcels <- sf::st_read(dsn=SBD_dir, quiet = TRUE, type = 3)
-class(st_geometry(SBD_parcels))
-
-######Tidy up the data for use
-##select just property number and year built for riverside county CREST
-crest_property_slim <- crest_property |>
-  dplyr::select(PIN, YEAR_BUILT) |>
-  dplyr::distinct()
-
-crest_property_dups <- crest_property_slim |>
-  select(PIN) |>
-  group_by(PIN) |>
-  summarize(count = n()) |>
-  filter(count > 1) |>
-  left_join(crest_property_slim) |>
-  mutate(unk = ifelse(is.na(YEAR_BUILT), 1,
-                ifelse(YEAR_BUILT < 1911, 1, 0))) |>
-  filter(unk == 0) |>
-  group_by(PIN) |>
-  summarize(PIN, YEAR_BUILT = min(YEAR_BUILT), .groups = 'drop') |>
-  unique()
-
-crest_property_dups2 <- crest_property_slim |>
-  select(PIN) |>
-  group_by(PIN) |>
-  summarize(count = n()) |>
-  filter(count > 1) |>
-  left_join(crest_property_dups) 
-
-crest_property_solo <- crest_property_slim |>
-  dplyr::select(PIN) |>
-  group_by(PIN) |>
-  summarize(count = n(), .groups = 'drop') |>
-  filter(count == 1) |>
-  left_join(crest_property_slim)
-
-crest_property_tidy <- bind_rows(crest_property_solo, crest_property_dups2)
-
-##filter on warehouses and light-industrial for Riverside County
-##transform coordinates from Northing-Easting to Lat-Long
-parcels_warehouse <- parcels |>
-  mutate(class = stringr::str_to_lower(CLASS_CODE)) |>
-  filter(str_detect(class, 'warehouse')) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
-
-source(paste0(wd, '/QA_list2.R'))
-
-parcels_manual_wh <- parcels |> 
-  mutate(class = stringr::str_to_lower(CLASS_CODE)) |>
-  filter(APN %in% add_as_warehouse) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
-
-parcels_lightIndustry <- parcels |>
-  mutate(class = stringr::str_to_lower(CLASS_CODE)) |>
-  filter(str_detect(class, 'light industrial')) |>
-  filter(SHAPE_Area > sq_ft_threshold_maybeWH) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
-
-##Bind two Riv.co. datasets together
-##Create a type category for the warehouse and industrial designation parcels
-
-parcels_join_yr <- bind_rows(parcels_warehouse, parcels_lightIndustry, parcels_manual_wh) |>
-  left_join(crest_property_tidy, by =c('APN' = 'PIN')) |>
-  unique() |>
-  mutate(YEAR_BUILT = ifelse(is.na(YEAR_BUILT), 1776, YEAR_BUILT)) |>
-  mutate(type = as.factor(ifelse(str_detect(class, 'warehouse'), 'warehouse', 'other')))
-
-##parse SBD data codes
-setwd(warehouse_dir)
-SBD_codes <- read_excel('Assessor Use Codes 05-21-2012.xls') |>
-  clean_names() |>
-  mutate(description = str_to_lower(description),
-         use_code = as.numeric(use_code)) |>
-  mutate(type = case_when(
-    str_detect(description, 'warehouse') ~ 'warehouse',
-    str_detect(description, 'light industrial') ~'other',
-    str_detect(description, 'flex') ~ 'other',
-    str_detect(description, 'storage') ~ 'other',
-    TRUE ~ 'Unselected'
-  )) |>
-  filter(type %in% c('warehouse', 'other'))  |>
-  rename(class = description) |>
-  filter(class %ni% c('retail warehouse', 'lumber storage', 'mini storage (public)',
-                      'storage yard', 'auto storage yard', 'boat storage yard', 
-                      'grain storage', 'potato storage', 'bulk fertilizer storage',
-                      'mini-storage warehouse')) #|>
-
-##Filter SBDCO data by warehouse and light industrial, filter by size threshold
-##Fix coordinate projection
-SBD_warehouse_ltInd <- inner_join(SBD_parcels, SBD_codes, by = c('TYPEUSE' = 'use_code' )) |>
-  mutate(threshold_maybeWH = ifelse(SHAPE_AREA > sq_ft_threshold_maybeWH, 1,0)) |>
-  mutate(exclude = ifelse(type == 'warehouse', 0,
-                    ifelse(threshold_maybeWH == 1, 0, 1))) |>
-  filter(exclude == 0) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |>
-  mutate(type = as.factor(type))
-
-##Import OC data - current parcels are useless
-#sf::st_layers(dsn = OC_dir)
-##FIXME
-#lu_codes <- c('1231', '1323', '1340', '1310')
-OC_parcels <- sf::st_read(dsn=paste0(warehouse_dir, '/OC_wh2018.geojson'), quiet = TRUE, type = 3) |>
-  clean_names() |>
-  mutate(class = 'warehouse',
-         type = 'warehouse')
-
-
-## Need to convert OC parcel data from XYZ polygon to XY polygon
-narrow_OC_parcels <- OC_parcels |>
- # left_join(code_desc, (by = c('lu16' = 'lu_codes'))) |>
-  mutate(year_built = 1910) |>
-  #select(apn, shape_area, class, type, geometry, year_built, county) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |>
-  mutate(type = as.factor(type)) |>
-  #st_zm() |>
-  mutate(threshold = ifelse(shape_area > sq_ft_threshold_maybeWH, 1, 0)) |>
-  mutate(exclude = ifelse(type == 'warehouse', 0,
-                          ifelse(threshold == 1, 0, 1))) |>
-  filter(exclude == 0) |>
-  rename(apn = address) |> 
-  select(apn, shape_area, class, type, geometry, year_built, county) #|>
-
-##combine spatial data frames for display
-##Select and rename columns to make everything match
-##Note that we can always add other columns if they are useful for display 
-narrow_RivCo_parcels <- parcels_join_yr |>
-  dplyr::select(APN, SHAPE_Area, class, type, SHAPE, YEAR_BUILT) |>
-  clean_names() |>
-  st_cast(to = 'POLYGON') #|>
-
-##Function required to rename sf column because sf package is dumb about this
-rename_geometry <- function(g, name){
-  current = attr(g, "sf_column")
-  names(g)[names(g)==current] = name
-  st_geometry(g)=name
-  g
-}
-
-narrow_RivCo_parcels <- rename_geometry(narrow_RivCo_parcels, 'geometry') |>
-  mutate(county = 'Riverside')
-names(narrow_RivCo_parcels)
-  
-narrow_SBDCo_parcels <- SBD_warehouse_ltInd |>
-  mutate(year_built = BASE_YEAR) |>
-  dplyr::select(APN, SHAPE_AREA, class, type, geometry, year_built) |>
-  clean_names() |>
-  mutate(county = 'San Bernardino')
-
-
-# Import DataTree Year_built info
-DataTree <- readxl::read_excel('SBDCo_warehouse_list2_Output.xlsx') |> 
-  janitor::clean_names() |> 
-  select(apn_formatted, apn_unformatted, year_built, year_built_effective)
-
-noYearValue <- DataTree |> 
-  filter(is.na(year_built) | year_built == 0)
-
-wYearValue <- DataTree |> 
-  filter(!is.na(year_built)) |> 
-  distinct() |> 
-  filter(year_built > 1850)
-
-compare <- narrow_SBDCo_parcels |> 
-  mutate(apn_formatted = str_c(str_sub(apn, 1, 4), '-',
-                               str_sub(apn, 5, 7), '-',
-                               str_sub(apn, 8, 9), '-',
-                               '0000')) |>
-  rename(year_base = year_built) |> 
-  left_join(wYearValue, by = 'apn_formatted') |> 
-  mutate(diff_yr = year_built - year_base) #|> 
-
-narrow_SBDCo_parcels2 <- compare |> 
-  mutate(year_built2 = ifelse(is.na(year_built), year_base, year_built)) |> 
-  dplyr::select(apn, shape_area, class, type, geometry, year_built2, county) |> 
-  rename(year_built = year_built2)
 
 ## Remove big raw files and save .RData file to app directory
 
 str(narrow_RivCo_parcels)
 str(narrow_SBDCo_parcels2)
-str(LA_warehouse_parcels)
+str(narrow_LA_parcels)
 str(narrow_OC_parcels)
-
-narrow_LA_parcels <- rename_geometry(LA_warehouse_parcels, 'geometry') |>
-  mutate(type = as.factor(type), county = 'Los Angeles')
-
-rm(ls = parcels, crest_property, crest_property_slim, SBD_parcels, crest_property_solo, 
-   crest_property_dups, crest_property_dups2, crest_property_tidy, OC_parcels) #|>
 
 gc()
 
@@ -298,7 +96,7 @@ rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SB
 
 ##Import QA list of warehouses and non-warehouses 
 ##FIXME - move this up for when we identify warehouses currently not on the list
-setwd(wd) 
+ 
 source('QA_list.R')
 
 joined_parcels <- joined_parcels |>
