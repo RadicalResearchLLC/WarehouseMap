@@ -230,7 +230,34 @@ combo2 <- planned_final |>
   select(name, shape_area, category, year_built, class, county, geometry, unknown) |> 
   rename(apn = name)
 
-combo_final <- bind_rows(combo1, combo2)
+combo_final1 <- bind_rows(combo1, combo2)
+
+#Generate centroids for warehouse joins
+combo_centroids <- combo_final1 |> 
+  st_centroid()
+#join counties
+County_centroids <- combo_centroids |> 
+  rename(county1 = county) |> 
+  st_join(Counties) |> 
+  mutate(countyIssue = ifelse(county1 == county, 0, 1)) |> 
+  select(-county1, -countyIssue)
+
+#join cities/CDPs
+narrow_jurisdiction <- jurisdictions |> 
+  select(name, geometry) |> 
+  rename(place_name = name)
+
+Jurisdiction_list <- County_centroids |> 
+  st_join(narrow_jurisdiction) |>
+  mutate(place_name = ifelse(is.na(place_name), 'unincorporated', place_name)) |> 
+  st_set_geometry(value = NULL)
+
+#Final join
+combo_final <- combo_final1 |> 
+  left_join(Jurisdiction_list) |> 
+  distinct()
+
+
 setwd(geojson_dir)
 unlink('finalParcels.geojson')
 unlink('plannedParcels.geojson')
@@ -240,9 +267,10 @@ st_write(planned_final, 'plannedParcels.geojson', append = FALSE)
 st_write(combo_final, 'comboFinal.geojson', append = FALSE)
 setwd(wd)
 
-rm(ls = combo1, combo2, IEcounties, planned_final, final_parcels)
+rm(ls = combo1, combo2, IEcounties, planned_final, final_parcels, combo_final1)
 ##FIXME put stats here
 rm(ls = joined_parcels2, sub1acre_warehouses)
+rm(ls = County_centroids, Jurisdiction_list, narrow_jurisdiction, combo_centroids)
 
 
 setwd(app_dir)
