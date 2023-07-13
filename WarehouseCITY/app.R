@@ -13,8 +13,8 @@ library(tidyverse)
 library(DT)
 library(markdown)
 
-deploy_date <- 'May 1, 2023'
-version <- 'Warehouse CITY v1.13, last updated'
+deploy_date <- 'July 13, 2023'
+version <- 'Warehouse CITY v1.15, last updated'
 ## Define UI for application that displays warehouses
 # Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
@@ -37,7 +37,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
     fluidRow(column(3, align = 'center', h3('Warehouse Selection Filters'),
                     hr(),
               selectizeInput(inputId = 'City', label = 'Jurisdictions - Select up to 5',
-                 choices = c('', sort(jurisdictions$name)), options = list(maxItems = 5)),
+                 choices = c('', sort(jurisdictions$name), 'unincorporated'), options = list(maxItems = 5)),
               numericInput('year_slider', 'Select warehouses built by', 
                 min = 1980, 
                 max = 2025, 
@@ -109,14 +109,6 @@ output$map <- renderLeaflet({
         options = layersControlOptions(collapsed = FALSE),
         position = 'topright'
         )  %>%
-      #addLegend(pal = paletteSize, 
-      #          values = c('28,000 to 100,000',  
-      #                     '100,000 to 250,000',
-      #                     '250,000 to 500,000',
-      #                     '500,000 to 1,000,000',
-      #                     '1,000,000+'),
-      #          title = 'Size bins (Sq.ft.)',
-      #          group = 'Size bins') %>% 
       addLegend(data = CalEJ4,
                 group = 'CalEnviroScreen',
                 title = 'CalEnviroScreen Score',
@@ -256,11 +248,12 @@ selected_cities_all <- reactive({
       st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
   }
 })
-selected_cities_union <- reactive({
-  req(selected_cities_all()) 
+
+#selected_cities_union <- reactive({
+#  req(selected_cities_all()) 
   
-  st_union(selected_cities_all())
-})
+#  st_union(selected_cities_all())
+#})
 
 #Select warehouses within city
 filteredParcels <- reactive({
@@ -268,11 +261,8 @@ filteredParcels <- reactive({
     cityParcels <- filteredParcels1() 
     }
   else {
-  #  cityIntersect <- st_intersects(selected_cities(), filteredParcels1())
-  #  cityParcels <- filteredParcels1()[cityIntersect[[1]],] 
-  cityParcels <- filteredParcels1() %>% 
-    filter(st_intersects(., selected_cities_union(), sparse = FALSE))
-    
+  cityParcels <- filteredParcels1() |>  
+    filter(place_name %in% input$City) #|> 
     }
   return(cityParcels)
 })
@@ -310,7 +300,7 @@ circle <- reactive({
 ##Code to select nearby warehouse polygons
 nearby_warehouses <- reactive({
   req(circle())
-  nearby <- st_join(circle(), filteredParcels()) %>% 
+  nearby <- st_join(circle(), filteredParcels(), join = st_contains) %>% 
     st_set_geometry(value = NULL) %>% 
     as.data.frame() %>%
     rename(parcel.number = apn) %>%
