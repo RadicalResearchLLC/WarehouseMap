@@ -20,7 +20,7 @@ library(readxl)
 #library(leaflet)
 library(sf)
 #library(htmltools)
-library(rmapshaper)
+#library(rmapshaper)
 
 ##set working, data, and app directories
 wd <- getwd()
@@ -51,6 +51,8 @@ source('LosAngeles.R')
 source('Orange.R')
 
 gc()
+
+narrow_OC_parcels<- st_make_valid(narrow_OC_parcels) 
 
 ## Remove big raw files and save .RData file to app directory
 
@@ -89,9 +91,7 @@ joined_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_
   mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) #|>
  # filter(exclude == 0)
 
-rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_SBDCo_parcels2,
-   parcels_join_yr, parcels_lightIndustry, SBD_warehouse_ltInd, parcels_warehouse, OC_parcels, narrow_OC_parcels,
-   compare, DataTree, wYearValue, noYearValue)
+rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SBDCo_parcels, narrow_SBDCo_parcels2, narrow_OC_parcels)
 
 
 ##Import QA list of warehouses and non-warehouses 
@@ -105,68 +105,23 @@ joined_parcels <- joined_parcels |>
 
 sf_use_s2(FALSE)
 
-#u <- st_equals(joined_parcels, retain_unique = TRUE)
-#unique <- joined_parcels[-unlist(u),] |> 
-#  st_set_geometry(value = NULL)
-geoOnly <- joined_parcels |> 
-  select(geometry) |> 
-  unique.data.frame() |> 
-  mutate(row = row_number()) |> 
+area <- sf::st_area(joined_parcels)
+
+sub1acre_warehouses <- joined_parcels |> 
+  mutate(shape_area2 = round(as.numeric(area*10.76391), -2)) |> 
+  select(-shape_area) |> 
+  filter(exclude == 1)
+
+final_parcels <- joined_parcels |> 
+  mutate(shape_area2 = round(as.numeric(area*10.76391), -2)) |> 
+  select(-shape_area) |> 
+  filter(exclude == 0) |> 
   st_make_valid()
-  
-uniqueParcels <- geoOnly |> 
-  st_join(joined_parcels, join = st_equals) |> 
-  st_set_geometry(value = NULL) |> 
-  group_by(row) |>
-  summarize(count = n()) |> 
-  filter(count == 1) |> 
-  left_join(geoOnly, by = 'row') |> 
-  st_as_sf() |> 
-  st_join(joined_parcels, join = st_equals) |> 
-  select(-row, - count.x, -count.y)
 
-multiParcels1 <-  geoOnly |> 
-  st_join(joined_parcels, join = st_equals) |> 
-  st_set_geometry(value = NULL) |> 
-  group_by(row) |>
-  summarize(count = n()) |> 
-  filter(count > 1) |> 
-  left_join(geoOnly, by = 'row') |> 
-  st_as_sf() |> 
-  st_join(joined_parcels, join = st_equals)# |> 
- # select(-row)
 
-##FIXME - not sure how to identify correct parcel - this fix just chooses a single polygon 
-##while dropping the identifying info
-##Happens for just ~25 parcels with multiples - small overall error only occurring 
-#in OC and LA
-multiParcels2 <- multiParcels1 |> 
-  group_by(row, count.x, shape_area, class, type, size_bin, yr_bin, exclude) |> 
-  summarize(apn = max(apn), year_built = max(year_built), .groups = 'drop') |>
-  select(-row, -count.x) |> 
-  distinct() |> 
-  select(-type)
 
-joined_parcels2 <- uniqueParcels |> 
-  select(apn, shape_area, class, year_built, county, year_chr, exclude) |> 
-  bind_rows(multiParcels2)
 
-rm(ls = SBD_codes, parcels_manual_wh,
-   multiParcels1, multiParcels2, uniqueParcels, joined_parcels, geoOnly)
 
-area <- sf::st_area(joined_parcels2)
-
-sub1acre_warehouses <- joined_parcels2 |> 
-  mutate(shape_area2 = round(as.numeric(area*10.76391), -2)) |> 
-  select(-shape_area) |> 
-  filter(shape_area2 <= 43560)
-
-final_parcels <- joined_parcels2 |> 
-  mutate(shape_area2 = round(as.numeric(area*10.76391), -2)) |> 
-  select(-shape_area) |> 
-  filter(shape_area2 > 43560)
-
-gc()
 
 ##import 
 setwd(wd)
@@ -215,9 +170,6 @@ setwd(output_dir)
 unlink('final_parcels_gt1acre.geojson')
 st_write(final_parcels, 'final_parcels_gt1acre.geojson')
 
-rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2,
-   final_parcels_28k)
-##Add data and stats for joining here
 
 combo1 <- final_parcels |> 
   mutate(category = 'Existing',
@@ -229,6 +181,10 @@ combo2 <- planned_final |>
   mutate(class = 'TBD', unknown = TRUE) |> 
   select(name, shape_area, category, year_built, class, county, geometry, unknown) |> 
   rename(apn = name)
+
+rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2,)
+##Add data and stats for joining here
+
 
 combo_final1 <- bind_rows(combo1, combo2)
 

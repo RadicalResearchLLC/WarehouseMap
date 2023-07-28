@@ -41,7 +41,9 @@ LA_parcels <- sf::st_read(dsn = LA_raw, quiet = TRUE, type = 3)
 # Open storage is NOT included - useCode 39
 
 LA_warehouse_parcels <- LA_parcels %>%
-  filter(UseDescription == 'Warehousing, Distribution, Storage') 
+  filter(UseDescription == 'Warehousing, Distribution, Storage') |> 
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |> 
+  st_make_valid()
 
 rm(ls = LA_parcels)
 gc()
@@ -67,7 +69,8 @@ LA_industrial_parcels <- LA_warehouse_parcels %>%
   select(apn, shape_area, class, type, year_built, Shape, 
          #situs_address, situs_city, situs_zip
          ) %>%
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |> 
+  st_make_valid()
 
 rm(ls = LA_warehouse_parcels)
 gc()
@@ -100,12 +103,13 @@ LA_unique <- uniqueParcel |>
   left_join(uniqueParcel, by = 'row') |> 
   st_as_sf() |> 
   st_join(LA_industrial_parcels, join = st_equals) |> 
-  select(-row)
+  select(-row) |> 
+  filter(!is.na(apn))
  
 LA_Multi <- LA_interMulti |> 
   st_join(LA_industrial_parcels, join = st_equals) |> 
   group_by(row, count, Shape, shape_area, class, type) |> 
-  summarize(apn = max(apn), year_built = max(year_built), .groups = 'drop') |> 
+  summarize(apn = first(apn), year_built = min(year_built), .groups = 'drop') |> 
   select(-row)
 
 final_LA <- bind_rows(LA_unique, LA_Multi)
@@ -115,9 +119,30 @@ st_geometry(final_LA) <- 'geometry'
 narrow_LA_parcels <- final_LA |> 
   mutate(type = as.factor(type), county = 'Los Angeles')
 
-rm(ls = u, unique, LA_industrial_28k_parcels, LA_geometry, LA_industrial_parcels_10k,
+
+LA_noAPN <- uniqueParcel |> 
+  st_join(LA_industrial_parcels, join = st_equals) |> 
+  st_set_geometry(value = NULL) |> 
+  group_by(row) |>
+  summarize(count = n()) |> 
+  filter(count == 1) |> 
+  left_join(uniqueParcel, by = 'row') |> 
+  st_as_sf() |> 
+  st_join(LA_industrial_parcels, join = st_equals) |> 
+  #select(row) |> 
+  filter(is.na(apn))
+
+LA_noAPN2 <- LA_noAPN |> 
+  select(row, Shape) |> 
+  st_make_valid() |>
+  st_join(LA_industrial_parcels, join = st_contains)
+
+
+  
+rm(ls = LA_geometry, LA_industrial_parcels_10k,
    LA_parcels_precise, unique2, Geo_only, LA_warehouse_parcels,
    LA_industrial_parcels, LA_Multi, LA_unique, LA_interMulti, final_LA, uniqueParcel)  
+rm(ls = LA_noAPN, LA_noAPN2, noAPN)
    
 setwd(LA_tidy)
 unlink('LA_filtered_parcels.shp')
