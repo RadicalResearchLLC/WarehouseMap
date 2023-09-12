@@ -226,7 +226,7 @@ rm(ls = combo1, combo2, IEcounties, planned_final, final_parcels, combo_final1)
 ##FIXME put stats here
 rm(ls = joined_parcels2, sub1acre_warehouses)
 rm(ls = County_centroids, Jurisdiction_list, narrow_jurisdiction, combo_centroids)
-
+rm(ls = joined_parcels)
 
 setwd(app_dir)
 save.image('.RData')
