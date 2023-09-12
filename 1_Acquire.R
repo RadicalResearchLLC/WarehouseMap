@@ -21,6 +21,9 @@ library(readxl)
 library(sf)
 #library(htmltools)
 #library(rmapshaper)
+library(pdftools)
+library(tesseract)
+library(tidygeocoder)
 
 ##set working, data, and app directories
 wd <- getwd()
@@ -117,10 +120,6 @@ final_parcels <- joined_parcels |>
   select(-shape_area) |> 
   filter(exclude == 0) |> 
   st_make_valid()
-
-
-
-
 
 
 ##import 
