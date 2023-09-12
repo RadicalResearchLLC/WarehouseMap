@@ -2,7 +2,7 @@
 ## Authored by Mike McCarthy, Radical Research LLC
 ## Thanks to Sean Raffuse at UC Davis AQRC for help with the nearby intersection code for great circles 
 ## First created May, 2022
-## Last modified October, 2022
+## Last modified September, 2023
 #
 
 library(shiny)
@@ -13,8 +13,8 @@ library(tidyverse)
 library(DT)
 library(markdown)
 
-deploy_date <- 'July 13, 2023'
-version <- 'Warehouse CITY v1.15, last updated'
+deploy_date <- 'September 12, 2023'
+version <- 'Warehouse CITY v1.16, last updated'
 ## Define UI for application that displays warehouses
 # Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
@@ -178,7 +178,7 @@ observe({
                 group = 'CalEnviroScreen')
 })
 
-WHPal <- colorFactor(palette = c('red', 'maroon'), domain = combo_final$category)
+WHPal <- colorFactor(palette = c('red', 'black'), domain = combo_final$category)
 
 observe({
   leafletProxy("map", data = filteredParcels()) %>%
