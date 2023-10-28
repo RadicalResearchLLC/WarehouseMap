@@ -117,7 +117,6 @@ OC_parcelsOver100 <- OC_parcels_narrow |>
   st_as_sf() |> 
   st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") #|> 
 
-
 rm(OC_parcels_all, OC_parcels_narrow)
 
 lat_lngs_sf <- lat_longs_geocodio |> 

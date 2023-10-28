@@ -50,8 +50,14 @@ sq_ft_threshold_maybeWH <- 150000
 
 source('Riverside.R')
 source('SanBernardino.R')
-source('LosAngeles.R')
-source('Orange.R')
+#source('LosAngeles.R')
+#source('Orange.R')
+narrow_OC_parcels <- sf::st_read('OC_whFixed.geojson') |> 
+  select(-address2) |> 
+  select(apn, shape_area, class, type, built_year, geometry, county) |> 
+  rename(year_built = built_year)
+narrow_LA_parcels <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/Warehouse_data/LAfiltered_shp') |> 
+  select(-count)
 
 gc()
 
@@ -73,24 +79,9 @@ gc()
 joined_parcels <- bind_rows(narrow_RivCo_parcels, narrow_SBDCo_parcels2, narrow_LA_parcels, narrow_OC_parcels) |>
   mutate(year_chr = ifelse(year_built <= 1910, 'unknown', year_built),
          year_built = ifelse(year_built <= 1980, 1980, year_built)) |>
-  mutate(floorSpace.sq.ft = round(shape_area*0.55, 1),
+  mutate(floorSpace.sq.ft = round(shape_area*0.55, 0),
          shape_area = round(shape_area, 0)) |>
   #filter(floorSpace.th.sq.ft > 100) |>
-  mutate(yr_bin = as.factor(case_when(
-  year_built > 1910 & year_built < 1982 ~ '1910 - 1981',
-  year_built >= 1982 & year_built < 1992 ~ '1982 - 1991',
-  year_built >= 1992 & year_built < 2002 ~ '1992 - 2001',
-  year_built >= 2002 & year_built < 2012 ~ '2002 - 2011',
-  year_built >= 2012 & year_built <= 2023 ~ '2012 - 2023',
-  year_built == 1910 ~ 'unknown'
-))) |>
-  mutate(size_bin = as.factor(case_when(
-    floorSpace.sq.ft < 100000 ~ '28,000 to 100,000',
-    floorSpace.sq.ft >= 100000 & floorSpace.sq.ft < 250000 ~ '100,000 to 250,000',
-    floorSpace.sq.ft >=250000 & floorSpace.sq.ft < 500000 ~ '250,000 to 500,000',
-    floorSpace.sq.ft >=500000 & floorSpace.sq.ft < 1000000 ~'500,000 to 1,000,000',
-    floorSpace.sq.ft >=1000000 ~ '1,000,000+'
-  ))) |>
   mutate(exclude = ifelse(floorSpace.sq.ft > sq_ft_threshold_WH, 0, 1)) #|>
  # filter(exclude == 0)
 
