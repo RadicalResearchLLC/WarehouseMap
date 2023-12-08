@@ -2,13 +2,13 @@
 ##Created by Mike McCarthy, Radical Research LLC
 ##San Bernardino County Data Import and Processing Steps
 ##First created July, 2023
-##Last modified July, 2023
+##Last modified December, 2023
 
 library(tidyverse)
 library(sf)
 
 SBD_dir <- paste0(warehouse_dir, '/SBD_Parcel')
-
+## Data from https://open.sbcounty.gov/datasets/countywide-parcels/about
 ##Read and import property record files for San Bernadino County
 sf::st_layers(dsn = SBD_dir)
 SBD_parcels <- sf::st_read(dsn=SBD_dir, quiet = TRUE, type = 3)

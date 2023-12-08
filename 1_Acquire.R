@@ -123,11 +123,11 @@ CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) |>
   filter(County %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) |>
   select(Tract, TotPop19, ApproxLoc, CIscoreP, CIscore, geometry, DieselPM_P) |> 
   #filter(CIscoreP >= 75) |> 
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  st_transform(crs = 4326)
 
 plannedWH.url <- 'https://raw.githubusercontent.com/RadicalResearchLLC/PlannedWarehouses/main/plannedWarehouses.geojson'
 plannedWarehouses <- st_read(plannedWH.url) |> 
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  st_transform(crs = 4326)
 
 shape_area <- st_area(plannedWarehouses)
 
@@ -160,7 +160,6 @@ setwd(output_dir)
 unlink('final_parcels_gt1acre.geojson')
 st_write(final_parcels, 'final_parcels_gt1acre.geojson')
 
-
 combo1 <- final_parcels |> 
   mutate(category = 'Existing',
          unknown = ifelse(year_chr == 'unknown', TRUE, FALSE)) |> 
@@ -174,7 +173,6 @@ combo2 <- planned_final |>
 
 rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2,)
 ##Add data and stats for joining here
-
 
 combo_final1 <- bind_rows(combo1, combo2)
 

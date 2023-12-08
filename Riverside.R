@@ -2,7 +2,7 @@
 ##Created by Mike McCarthy, Radical Research LLC
 ##Riverside County Data Import and Processing Steps
 ##First created July, 2023
-##Last modified July, 2023
+##Last modified December, 2023
 
 library(tidyverse)
 library(sf)
@@ -10,6 +10,7 @@ library(sf)
 RivCo1_dir <- paste0(warehouse_dir, '/CREST_tables.gdb')
 RivCo2_dir <- paste0(warehouse_dir, '/ParcelAttributed.gdb')
 
+# Data from https://gis2.rivco.org/
 ##Import parcels and property record files for Riverside County
 ##st_read(type=1) is attempting to create the same sfc type for both counties
 ##FIXME - crest property just a table?
