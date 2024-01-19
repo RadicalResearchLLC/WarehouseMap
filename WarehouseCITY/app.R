@@ -2,7 +2,7 @@
 ## Authored by Mike McCarthy, Radical Research LLC
 ## Thanks to Sean Raffuse at UC Davis AQRC for help with the nearby intersection code for great circles 
 ## First created May, 2022
-## Last modified September, 2023
+## Last modified December, 2023
 #
 
 library(shiny)
@@ -12,9 +12,11 @@ library(sf)
 library(tidyverse)
 library(DT)
 library(markdown)
+library(shinycssloaders)
 
-deploy_date <- 'September 12, 2023'
-version <- 'Warehouse CITY v1.16, last updated'
+deploy_date <- 'January 19, 2024'
+version <- 'Warehouse CITY v1.18, last updated'
+sf_use_s2(FALSE)
 ## Define UI for application that displays warehouses
 # Show app name and logos
 ui <- fluidPage(title = 'Warehouse CITY',
@@ -35,9 +37,23 @@ ui <- fluidPage(title = 'Warehouse CITY',
     #sidebarLayout
     # Display slider bar selections, checkbox, and summary text
     fluidRow(column(3, align = 'center', h3('Warehouse Selection Filters'),
-                    hr(),
-              selectizeInput(inputId = 'City', label = 'Jurisdictions - Select up to 5',
-                 choices = c('', sort(jurisdictions$name), 'unincorporated'), options = list(maxItems = 5)),
+                hr(),
+             radioButtons(
+                  inputId = 'Juris_District', 
+                  label = 'Select by Jurisdiction or Legislative District',
+                  choices = c('Jurisdiction', 'District'), 
+                  selected = 'Jurisdiction', 
+                  inline = TRUE), 
+             conditionalPanel("input.Juris_District == 'Jurisdiction'",
+               selectizeInput(inputId = 'City', label = 'Jurisdictions - Select up to 8',
+                 choices = c('', sort(jurisdictions$name), 'unincorporated'), 
+                 options = list(maxItems = 8))
+             ),
+             conditionalPanel("input.Juris_District == 'District'",
+               selectizeInput(inputId = 'District', label = 'Legislative Districts - Select up to 8',
+                 choices = c('', sort(districts$DistrictLabel)), 
+                 options = list(maxItems = 8))
+             ),
               numericInput('year_slider', 'Select warehouses built by', 
                 min = 1980, 
                 max = 2025, 
@@ -55,40 +71,58 @@ ui <- fluidPage(title = 'Warehouse CITY',
             conditionalPanel("input.Z == true",
                 
                 numericInput(inputId = 'FAR', label = 'Floor area ratio - (0.05 to 1)', value = 0.55,
-                         min = 0.05, max = 1.0, step = 0.05, width = '200px'),
+                  min = 0.05, max = 1.0, step = 0.05, width = '200px'),
                 numericInput(inputId = 'TruckPerTSF', label = 'Truck Trips per 1,000 sq.ft. (0.1 to 1.5)', value = 0.67,
-                         min = 0.1, max = 1.5, step = 0.01, width = '200px'),
+                  min = 0.1, max = 1.5, step = 0.01, width = '200px'),
                 numericInput(inputId = 'avgVMT', label = 'Truck trip length (miles - 5 to 60)', value = 38,
-                         min = 5, max = 60, step = 1, width = '200px'),
+                  min = 5, max = 60, step = 1, width = '200px'),
                 numericInput(inputId = 'DPMperMile', label = 'Diesel PM (lbs/mile)', value = 0.0000364,
-                         min = 0.0000100, max = 0.0001, step = 0.000001, width = '200px'),
+                  min = 0.0000100, max = 0.0001, step = 0.000001, width = '200px'),
                 numericInput(inputId = 'NOxperMile', label = 'NOx (lbs/mile)', value = 0.00410,
-                         min = 0.0004, max = 0.04, step = 0.0001, width = '200px'),
+                  min = 0.0004, max = 0.04, step = 0.0001, width = '200px'),
                 numericInput(inputId = 'CO2perMile', label = 'CO2 (lbs/mile)', value = 2.44,
-                         min = 1, max = 5, step = 0.01, width = '200px'),
+                  min = 1, max = 5, step = 0.01, width = '200px'),
                 numericInput(inputId = 'Jobs', label = 'Jobs per acre', value = 8,
-                         min = 4, max = 20, step = 1, width = '200px')
-                
+                  min = 4, max = 20, step = 1, width = '200px')
             ),
             hr(),
+            # Display deploy date
             h3('Version and Deployment info'),
             hr(),
             paste(version, deploy_date)
             ),
              column(8, align = 'center', 
-             dataTableOutput('Summary'),
-             leafletOutput("map", height = 600),
-             dataTableOutput('warehouseDF')
-             )),
-        # Display deploy date
+             shinycssloaders::withSpinner(dataTableOutput('Summary')),
+             shinycssloaders::withSpinner(leafletOutput("map", height = 600)),
+             shinycssloaders::withSpinner(dataTableOutput('warehouseDF'))
+             ))
     ),
     tabPanel('Readme',
       div(style = 'width: 90%; margin: auto;',
-      fluidRow(includeMarkdown("readme.md")),
+      fluidRow(includeMarkdown("readme.md"))
       )
-    )
+    ),
+    tabPanel('Stats',
+      fluidRow(column(3, align = 'center', 
+                      #h3('Selection Filters'),
+                      hr(),
+                      radioButtons(inputId = 'CountyCity',
+                        label = 'Select type of jurisdiction',
+                        choices = c('County', 'City'),
+                        selected = 'County',
+                        inline = TRUE),
+                      selectizeInput(inputId = 'City2', 
+                        label = 'Jurisdictions - Select up to 4',
+                        choices = c('', sort(jurisdictions$name), 'unincorporated'), 
+                        options = list(maxItems = 4))
+                      ),
+               column(8, align = 'center',
+                      shinycssloaders::withSpinner(plotOutput("trends")),
+                      shinycssloaders::withSpinner(dataTableOutput('Numbers'))
+                      )
+               )
+      )
   )
-  
 )
 
 server <- function(input, output) {
@@ -97,12 +131,12 @@ server <- function(input, output) {
 #Create leaflet map with legend and layers control
   
 output$map <- renderLeaflet({
-    map1 <- leaflet() %>%
+    map1 <- leaflet() |> 
      # addTiles() %>%
-      setView(lat = 34, lng = -117.60, zoom = 10) %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = 'Imagery') %>%
-      addProviderTiles(providers$OpenRailwayMap, group = 'Rail') %>%
-      addProviderTiles(providers$CartoDB.Positron, group = 'Basemap') %>% 
+      setView(lat = 34, lng = -117.60, zoom = 9) |> 
+      addProviderTiles(providers$Esri.WorldImagery, group = 'Imagery') |> 
+      addProviderTiles(providers$OpenRailwayMap, group = 'Rail') |> 
+      addProviderTiles(providers$CartoDB.Positron, group = 'Basemap')  |>
       addLayersControl(baseGroups = c('Basemap', 'Imagery'),
         overlayGroups = c('Warehouses', 'Jurisdictions',
                           'Circle', 'Rail', 'CalEnviroScreen'), 
@@ -113,18 +147,18 @@ output$map <- renderLeaflet({
                 group = 'CalEnviroScreen',
                 title = 'CalEnviroScreen Score',
                 values = ~CIscoreP,
-                pal = qpal) %>% 
+                pal = qpal)  |>
       addLegend(data = filteredParcels(),
                 pal = WHPal,
                 title = 'Status',
                 values = ~category,
                 group = 'Warehouses',
-                position = 'bottomright') %>% 
-      addMapPane('Jurisdictions', zIndex = 390) %>% 
-      addMapPane('Circle', zIndex = 395) %>% 
-      addMapPane('Warehouses', zIndex = 410) %>% 
-      addMapPane('CalEnviroScreen', zIndex = 400) #%>% 
-      map1 %>% hideGroup(c('Rail', 'CalEnviroScreen', 'Size bins'))
+                position = 'bottomright')  |>
+      addMapPane('Jurisdictions', zIndex = 405)  |>  
+      addMapPane('Circle', zIndex = 400) |>  
+      addMapPane('Warehouses', zIndex = 410)  |>
+      addMapPane('CalEnviroScreen', zIndex = 402)  |>
+      hideGroup(c('Rail', 'CalEnviroScreen', 'Size bins'))
     })
 
 #OrBr <- c('beige' = '#EEE1B1',
@@ -138,7 +172,7 @@ observe({
   req(circle_click$mapClick)
   
   leafletProxy("map", data = circle()) %>%
-  #  clearShapes(group = 'Circle') %>% 
+  #  clearShapes(group = 'Circle')  |>
     clearGroup(group = 'Circle') %>%
     addPolygons(color = 'grey50',
                 group = 'Circle')
@@ -155,13 +189,13 @@ observe({
   req(selected_cities_all())
   leafletProxy("map", data = selected_cities_all()) %>%
     clearGroup(group = 'Jurisdictions') %>%
-    addPolygons(color = 'black',
-                fillOpacity = 0.05,
+    addPolylines(color = 'black',
+                #fillOpacity = 0.05,
                 weight = 2,
                 group = 'Jurisdictions')
 })
 #CalEnviroScreen4.0 census tracts
-CalEJ4_75 <- CalEJ4 %>% 
+CalEJ4_75 <- CalEJ4  |>
   filter(CIscoreP >= 0.0)
 
 qpal <- colorQuantile('magma', CalEJ4_75$CIscoreP, n = 5, reverse = TRUE)
@@ -204,7 +238,7 @@ observe({
 
 ## Generate a data table of warehouses in selected reactive data
 output$warehouseDF <- DT::renderDataTable(
-  parcelDF_circle() %>% 
+  parcelDF_circle()  |>
   rename(Category = category, 'Assessor parcel number' = parcel.number, 'Building classification' = class, Acres = acreage,
            'Year built' = year_built, 'Building sq.ft.' = Sq.ft.), 
   #select(-type), 
@@ -237,15 +271,28 @@ filteredParcels1 <- reactive({
   return(selectedYears)
 })
 #Select city boundaries 
+#Add select legislative boundaries
 selected_cities_all <- reactive({
-  req(input$City)
+  
   #countCity <- length(input$City)
-  if(is.null(input$City)) {}
-  else
+  if(input$Juris_District == 'Jurisdiction') {
+    req(input$City)
+    if(is.null(input$City)) {}
+    else
      {
-    selectedJuris <- jurisdictions %>% 
-      filter(name %in% input$City) %>% 
+    selectedJuris <- jurisdictions  |>
+      filter(name %in% input$City)  |>
       st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+     }
+  }
+  else {
+    req(input$District)
+    if(is.null(input$District)) {}
+    else
+    {
+      selectedJuris <- districts |> 
+        filter(DistrictLabel %in% input$District )
+    }
   }
 })
 
@@ -257,13 +304,26 @@ selected_cities_all <- reactive({
 
 #Select warehouses within city
 filteredParcels <- reactive({
-  if(is.null(input$City)) {
-    cityParcels <- filteredParcels1() 
+  if(input$Juris_District == 'Jurisdiction') {
+    if(is.null(input$City)) {
+      cityParcels <- filteredParcels1() 
+      }
+    else {
+      cityParcels <- filteredParcels1() |>  
+      filter(place_name %in% input$City) #|> 
     }
+  }
   else {
-  cityParcels <- filteredParcels1() |>  
-    filter(place_name %in% input$City) #|> 
+    if(is.null(input$District)) {
+      cityParcels <- filteredParcels1()
+      }
+    else {
+      cityParcels <- filteredParcels1() |>
+        ##FIXME - note that this is theoretically districts, not cities 
+        st_filter(selected_cities_all())
+      }
     }
+  
   return(cityParcels)
 })
 
@@ -300,8 +360,8 @@ circle <- reactive({
 ##Code to select nearby warehouse polygons
 nearby_warehouses <- reactive({
   req(circle())
-  nearby <- st_join(circle(), filteredParcels(), join = st_contains) %>% 
-    st_set_geometry(value = NULL) %>% 
+  nearby <- st_join(circle(), filteredParcels(), join = st_contains)  |>
+    st_set_geometry(value = NULL)  |>
     as.data.frame() %>%
     rename(parcel.number = apn) %>%
     mutate(Sq.ft. = round((shape_area*input$FAR), -3),
@@ -341,7 +401,7 @@ SumStats <- reactive({
   req(parcelDF_circle())
   
   parcelDF_circle() %>%
-    group_by(category) %>% 
+    group_by(category)  |>
     summarize(Warehouses = n(), Acreage = round(sum(acreage), 0), 
               Total.Bldg.Sq.ft = round(sum(acreage*input$FAR*43560), -5), .groups = 'drop') %>%
     mutate(Truck.Trips = round(input$TruckPerTSF*0.001*Total.Bldg.Sq.ft ,-3)) %>%
@@ -355,20 +415,97 @@ SumStats <- reactive({
 
 ##Display summary table
 output$Summary <- renderDataTable(
-  SumStats() %>%  
+  SumStats()  |> 
     datatable(
-      caption  = 'This interactive map shows the logistics industry footprint in Los Angeles, Riverside, and San Bernardino Counties.  Zoom in and/or click an area to see specific community impacts. Summary statistics are estimates based on best available information. Please see Readme tab for more information on methods and data sources.',
+      caption  = 'This interactive map shows the logistics industry footprint in Los Angeles, Orange, Riverside, and San Bernardino Counties.  Zoom in and/or click an area to see specific community impacts. Summary statistics are estimates based on best available information. Please see Readme tab for more information on methods and data sources.',
       rownames = FALSE, 
       options = list(dom = 'Bt',
                  buttons = list( 
                    list(extend = 'csv', filename = paste('SummaryStats', sep='-')),
                    list(extend = 'excel', filename =  paste("SummaryStats", sep = "-")))),
       extensions = c('Buttons')
-    ) %>% 
+    )  |>
     formatRound(columns = c(2:5, 7, 9),
                 interval = 3, mark = ',',
                 digits = 0)
 ) 
+
+##Jurisdictional Aggregation
+
+data4trends <- reactive({
+  
+  if(input$CountyCity == 'County') {
+  trendsData <- combo_final |> 
+    st_set_geometry(value = NULL) |>
+    mutate(decade = case_when(
+        year_built == 1980 ~ '1980',
+        year_built >= 1981 & year_built <= 1990 ~ '1990',
+        year_built >= 1991 & year_built <= 2000 ~ '2000',
+        year_built >= 2001 & year_built <= 2010 ~ '2010',
+        year_built >= 2011 & year_built <= 2020 ~ '2020',
+        year_built >= 2021 ~ '2030 - Planned'
+      )) |> 
+      group_by(decade, county) |> 
+      summarize(sumFootprint = sum(shape_area),
+                count = n(), .groups = 'drop')
+  } else {
+    req(input$City2)
+    
+    trendsData <- combo_final |> 
+      st_set_geometry(value = NULL) |>
+      mutate(decade = case_when(
+        year_built == 1980 ~ '1980',
+        year_built >= 1981 & year_built <= 1990 ~ '1990',
+        year_built >= 1991 & year_built <= 2000 ~ '2000',
+        year_built >= 2001 & year_built <= 2010 ~ '2010',
+        year_built >= 2011 & year_built <= 2020 ~ '2020',
+        year_built >= 2021 ~ '2030 - Planned'
+      )) |> 
+      filter(place_name %in% input$City2) |> 
+      group_by(decade, place_name) |> 
+      summarize(sumFootprint = sum(shape_area),
+                count = n(), .groups = 'drop')
+  }
+  return(trendsData)
+})
+
+output$trends <- renderPlot({
+  if(input$CountyCity == 'County') {
+    plot1 <- ggplot(data = data4trends(),
+        aes(x = county, y = sumFootprint, fill = decade)) +
+      geom_col(position = position_dodge(preserve= 'single')) +
+      theme_bw() +
+      scale_y_continuous(label = scales::comma_format()) +
+      labs(x = 'County', y = 'Warehouse footprint (sq.ft.)',
+           fill = 'Year') +
+      scale_fill_viridis_d(direction = -1,) +
+      geom_vline(xintercept = 2.5, color = 'darkred', linetype = 'twodash')
+  }
+  else if(input$CountyCity == 'City') {
+    req(input$City2)
+    plot1 <- ggplot(data = data4trends(),
+                    aes(x = place_name, y = sumFootprint, fill = decade)) +
+      geom_col(position = position_dodge(preserve= 'single')) +
+      theme_bw() +
+      scale_y_continuous(label = scales::comma_format()) +
+      labs(x = 'City', y = 'Warehouse footprint (sq.ft.)',
+           fill = 'Year') +
+      scale_fill_viridis_d(direction = -1,)#+
+     #geom_vline(xintercept = 2.5, color = 'darkred', linetype = 'twodash')
+  }
+  return(plot1)
+})
+
+output$Numbers<- DT::renderDataTable(
+  data4trends() |> 
+    rename('Footprint (sq.ft.)' = sumFootprint,
+           'Number of warehouses' = count) |> 
+  datatable(
+    caption  = 'Summary statistics for jurisdictions.',
+    rownames = FALSE, 
+    options = list(dom = 'Bt')
+  )
+)
 
 }
 # Run the application 
