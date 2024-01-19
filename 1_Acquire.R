@@ -201,7 +201,6 @@ combo_final <- combo_final1 |>
   left_join(Jurisdiction_list) |> 
   distinct()
 
-
 setwd(geojson_dir)
 unlink('finalParcels.geojson')
 unlink('plannedParcels.geojson')
@@ -216,6 +215,18 @@ rm(ls = combo1, combo2, IEcounties, planned_final, final_parcels, combo_final1)
 rm(ls = joined_parcels2, sub1acre_warehouses)
 rm(ls = County_centroids, Jurisdiction_list, narrow_jurisdiction, combo_centroids)
 rm(ls = joined_parcels)
+
+##Import Assembly and Senate Districts
+assembly <- sf::st_read('C:/Dev/CA_spatial_data/SoCalLegislativePolygons.geojson') |> 
+  st_transform(crs = 4326)
+senate <- sf::st_read('C:/Dev/CA_spatial_data/SenateDistrictsCA.geojson') |> 
+  st_transform(crs = 4326) |> 
+  st_filter(Counties) |> 
+  select(SenateDistrictLabel, geometry) |> 
+  rename(DistrictLabel = SenateDistrictLabel) #|> 
+
+districts <- bind_rows(assembly, senate)
+rm(ls = assembly, senate)
 
 setwd(app_dir)
 save.image('.RData')
