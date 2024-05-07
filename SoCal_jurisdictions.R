@@ -34,8 +34,20 @@ LAOC <- c('Malibu', 'Santa Monica', 'Manhattan Beach', 'Hermosa Beach', 'Redondo
 beach_towns <- OC_and_LA_jurisdictions |> 
   filter(NAME %in% LAOC)
 
-SoCal_places2 <- rbind(SoCal_places, beach_towns) |> 
+area_m2 <- as.numeric(st_area(SoCalCounties))
+SoCalCounties$area_m2 <- area_m2 
+
+counties_short <- SoCalCounties |> 
+  mutate(ALAND = 10.7639*area_m2,
+         NAMELSAD = paste(COUNTY_NAME, 'County'),
+         NAME = paste(COUNTY_NAME, 'County')) |> 
   select(COUNTY_NAME, NAME, NAMELSAD, ALAND, geometry)
+                         
+  
+
+SoCal_places2 <- rbind(SoCal_places, beach_towns) |> 
+  select(COUNTY_NAME, NAME, NAMELSAD, ALAND, geometry) |> 
+  rbind(counties_short)
 
 
 setwd('C:/Dev/WarehouseMap/community_geojson')

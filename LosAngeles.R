@@ -39,18 +39,48 @@ LA_parcels <- sf::st_read(dsn = LA_raw, quiet = TRUE, type = 3)
 
 # UseCode_2 is 33 and UseDescription is 'Warehousing, Distribution, Storage' are identical
 # Open storage is NOT included - useCode 39
+## FIXME - need to check on generic industrial parcels 'NA' use_code_3rd_digit and 
+# 'Industrial' use_code_2nd_digit
 
-LA_warehouse_parcels <- LA_parcels %>%
+LA_2021_present_rolls <- read_csv(paste0(warehouse_dir, '/Parcel_data_2021_Table_8468414499611436475.csv'),
+                                  col_types = 'cccncc?' ) |> 
+  janitor::clean_names()  |> 
+  filter(use_code_2nd_digit == 'Warehousing, Distribution, Storage') |> 
+  filter(use_code_3rd_digit %in% c('Warehousing, Distribution, Under 10,000 SF',
+                                   'Warehousing, Distribution, 10,000 to 24,999 SF',
+                                   'Warehousing, Distribution, 25,000 to 50,000 SF',
+                                   'Warehousing, Distribution, Over 50,000 SF')) |> 
+  filter(roll_year == 2023)
+
+gc()
+
+# use license and terms - and citation guidelines
+## https://egis-lacounty.hub.arcgis.com/pages/terms-of-use
+
+LA_warehouse_parcels1 <- LA_parcels |> 
   filter(UseDescription == 'Warehousing, Distribution, Storage') |> 
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |> 
+  st_transform(crs = 4326) |>
+  st_make_valid() |> 
+  janitor::clean_names() |> 
+  select(ain, apn, year_built1, use_code, use_code_2, use_description, shape_area,
+         Shape) 
+  
+names(LA_warehouse_parcels1)
+
+LA_warehouse_parcels2 <- LA_parcels |> 
+  inner_join(LA_2021_present_rolls, by = c('AIN' = 'ain')) |> 
+  st_transform(crs = 4326) |> 
   st_make_valid()
+
+## FIXME - right now I trust LA warehouse parcels 2 more as a conservative estimate
+## FIXME - need to develop an app to go parcel by parcel on the 12,000 generic industrial parcels in LA.
 
 rm(ls = LA_parcels)
 gc()
 pryr::mem_used()
 
 #Tidy the dataset but don't filter on size yet
-LA_industrial_parcels <- LA_warehouse_parcels %>%
+LA_industrial_parcels <- LA_warehouse_parcels2 %>%
   #filter(UseType == 'Industrial') %>%
   mutate(type = ifelse(str_detect(str_to_lower(UseDescription), 'warehous'), 'warehouse', 
                        ifelse(str_detect(str_to_lower(UseDescription), 'industrial'), 'industrial', 'other')
@@ -60,7 +90,7 @@ LA_industrial_parcels <- LA_warehouse_parcels %>%
   select(APN, YearBuilt1, Shape_Area, type, Shape, UseDescription, 
          #SitusAddress, SitusCity, SitusZIP
          ) %>%
-  clean_names() %>%
+  janitor::clean_names() %>%
   mutate(year_built = as.numeric(year_built1),
          class=use_description) %>%
   mutate(year_built = ifelse(is.na(year_built), 1910, 
@@ -69,10 +99,10 @@ LA_industrial_parcels <- LA_warehouse_parcels %>%
   select(apn, shape_area, class, type, year_built, Shape, 
          #situs_address, situs_city, situs_zip
          ) %>%
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |> 
+  st_transform(crs = 4326) |> 
   st_make_valid()
 
-rm(ls = LA_warehouse_parcels)
+rm(ls = LA_warehouse_parcels1, LA_warehouse_parcels2)
 gc()
 
 Geo_only <- LA_industrial_parcels |> 
@@ -119,7 +149,6 @@ st_geometry(final_LA) <- 'geometry'
 narrow_LA_parcels <- final_LA |> 
   mutate(type = as.factor(type), county = 'Los Angeles')
 
-
 LA_noAPN <- uniqueParcel |> 
   st_join(LA_industrial_parcels, join = st_equals) |> 
   st_set_geometry(value = NULL) |> 
@@ -137,12 +166,10 @@ LA_noAPN2 <- LA_noAPN |>
   st_make_valid() |>
   st_join(LA_industrial_parcels, join = st_contains)
 
-
-  
 rm(ls = LA_geometry, LA_industrial_parcels_10k,
    LA_parcels_precise, unique2, Geo_only, LA_warehouse_parcels,
    LA_industrial_parcels, LA_Multi, LA_unique, LA_interMulti, final_LA, uniqueParcel)  
-rm(ls = LA_noAPN, LA_noAPN2, noAPN)
+rm(ls = LA_noAPN, LA_noAPN2, noAPN, LA_use_type_code)
    
 setwd(LA_tidy)
 unlink('LA_filtered_parcels.shp')

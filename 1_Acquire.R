@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified July, 2023
+##Last modified April, 2024
 ##This script acquires and tidy parcel data for the app
 
 #rm(list =ls()) # clear environment
@@ -21,9 +21,9 @@ library(readxl)
 library(sf)
 #library(htmltools)
 #library(rmapshaper)
-library(pdftools)
-library(tesseract)
-library(tidygeocoder)
+#library(pdftools)
+#library(tesseract)
+#library(tidygeocoder)
 
 ##set working, data, and app directories
 wd <- getwd()
@@ -72,7 +72,6 @@ str(narrow_OC_parcels)
 
 gc()
 
-
 #str(final_parcels)
 
 ##Bind two counties together and put in null 1776 year for missing or 0 warehouse year built dates
@@ -110,8 +109,8 @@ final_parcels <- joined_parcels |>
   mutate(shape_area2 = round(as.numeric(area*10.76391), -2)) |> 
   select(-shape_area) |> 
   filter(exclude == 0) |> 
-  st_make_valid()
-
+  st_make_valid() |> 
+  mutate(county = str_c(county, ' County'))
 
 ##import 
 setwd(wd)
@@ -125,36 +124,39 @@ CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) |>
   #filter(CIscoreP >= 75) |> 
   st_transform(crs = 4326)
 
-plannedWH.url <- 'https://raw.githubusercontent.com/RadicalResearchLLC/PlannedWarehouses/main/plannedWarehouses.geojson'
+#FIXME - will want this to be full tracked warehouses soon
+plannedWH.url <- 'https://raw.githubusercontent.com/RadicalResearchLLC/PlannedWarehouses/main/CEQA_WH.geojson'
 plannedWarehouses <- st_read(plannedWH.url) |> 
   st_transform(crs = 4326)
 
-shape_area <- st_area(plannedWarehouses)
+#shape_area <- st_area(plannedWarehouses)
 
 planned_tidy <- plannedWarehouses |> 
-  mutate(shape_area =  round(as.numeric(10.764*shape_area), -3),
-         class = 'Planned and Approved',
+  mutate(shape_area =  round(parcel_area, -3),
+         class = stage_pending_approved,
          year_chr = 'future',
          year_built = 2025,
          type = 'warehouse',
-         row = row_number())
+         row = row_number()) |> 
+  select(-parcel_area, -stage_pending_approved)
 
 Counties <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/community_geojson/California_County_Boundaries.geojson') |> 
   filter(COUNTY_NAME %in% c('Los Angeles', 'Orange', 'Riverside', 'San Bernardino')) |> 
   select(COUNTY_NAME, geometry) |> 
-  rename(county = COUNTY_NAME)
+  rename(county = COUNTY_NAME) |> 
+  mutate(county = str_c(county, ' County'))
 
 planned_final <- planned_tidy |> 
   st_centroid() |> 
   st_join(Counties) |> 
   st_set_geometry(value = NULL) |> 
   inner_join(planned_tidy) |>
-  filter(row != 342) |> 
+  #filter(row != 342) |> 
   st_as_sf() |> 
   st_transform(crs=4326)  |> 
   select(-row) |> 
   mutate(floorSpace.sq.ft = 0.55*shape_area) |> 
-  rename(category = class)
+  rename(name = project)
 
 setwd(output_dir)
 unlink('final_parcels_gt1acre.geojson')
@@ -167,11 +169,11 @@ combo1 <- final_parcels |>
   rename(shape_area = shape_area2)
   
 combo2 <- planned_final |> 
-  mutate(class = 'TBD', unknown = TRUE) |> 
+  mutate(class = ceqa_url, unknown = TRUE) |> 
   select(name, shape_area, category, year_built, class, county, geometry, unknown) |> 
   rename(apn = name)
 
-rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2,)
+rm(ls = plannedWarehouses, planned_tidy, plannedParcel1, plannedParcel2)
 ##Add data and stats for joining here
 
 combo_final1 <- bind_rows(combo1, combo2)
@@ -189,12 +191,14 @@ County_centroids <- combo_centroids |>
 #join cities/CDPs
 narrow_jurisdiction <- jurisdictions |> 
   select(name, geometry) |> 
-  rename(place_name = name)
+  rename(place_name = name) |> 
+  filter(place_name %ni% c('Los Angeles County', 'Orange County', 
+          'Riverside County', 'San Bernardino County'))
 
 Jurisdiction_list <- County_centroids |> 
   st_join(narrow_jurisdiction) |>
   mutate(place_name = ifelse(is.na(place_name), 'unincorporated', place_name)) |> 
-  st_set_geometry(value = NULL)
+  st_set_geometry(value = NULL) 
 
 #Final join
 combo_final <- combo_final1 |> 
@@ -227,6 +231,9 @@ senate <- sf::st_read('C:/Dev/CA_spatial_data/SenateDistrictsCA.geojson') |>
 
 districts <- bind_rows(assembly, senate)
 rm(ls = assembly, senate)
+
+##Include analysis of WAIRE NoV rules
+source('WAIRE_NOV.R')
 
 setwd(app_dir)
 save.image('.RData')
