@@ -15,6 +15,9 @@ Shield: [![CC BY-SA 4.0][cc-by-sa-shield]][cc-by-sa]
 This work is licensed under a
 [Creative Commons Attribution-ShareAlike 4.0 International License][cc-by-sa].
 
+Please cite our new manuscript on Warehouse CITY at Environment and Planning B: Urban Analytics and City Science
+https://journals.sagepub.com/doi/10.1177/23998083241262553
+
 [![CC BY-SA 4.0][cc-by-sa-image]][cc-by-sa]
 
 [cc-by-sa]: http://creativecommons.org/licenses/by-sa/4.0/
