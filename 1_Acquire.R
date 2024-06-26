@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified April, 2024
+##Last modified June, 2024
 ##This script acquires and tidy parcel data for the app
 
 #rm(list =ls()) # clear environment
@@ -125,9 +125,11 @@ CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) |>
   st_transform(crs = 4326)
 
 #FIXME - will want this to be full tracked warehouses soon
-plannedWH.url <- 'https://raw.githubusercontent.com/RadicalResearchLLC/PlannedWarehouses/main/CEQA_WH.geojson'
+plannedWH.url <- 'https://github.com/RadicalResearchLLC/CEQA_tracker/raw/main/CEQA_WH.geojson'
 plannedWarehouses <- st_read(plannedWH.url) |> 
-  st_transform(crs = 4326)
+  st_transform(crs = 4326) |> 
+  filter(county %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) |> 
+  select(project, ceqa_url, sch_number, stage_pending_approved, category, parcel_area, geometry) 
 
 #shape_area <- st_area(plannedWarehouses)
 
