@@ -129,7 +129,8 @@ plannedWH.url <- 'https://github.com/RadicalResearchLLC/CEQA_tracker/raw/main/CE
 plannedWarehouses <- st_read(plannedWH.url) |> 
   st_transform(crs = 4326) |> 
   filter(county %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) |> 
-  select(project, ceqa_url, sch_number, stage_pending_approved, category, parcel_area, geometry) 
+  select(project, ceqa_url, sch_number, stage_pending_approved, category, parcel_area, geometry) |> 
+  filter(category != 'Built')
 
 #shape_area <- st_area(plannedWarehouses)
 
