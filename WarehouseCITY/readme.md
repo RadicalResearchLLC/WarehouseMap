@@ -1,14 +1,16 @@
-# Warehouse CITY Documentation (beta v1.18 - released January 19, 2024)
+# Warehouse CITY Documentation (v1.21)
 
 ## Introduction
 
 The Warehouse CITY (**C**umulative **I**mpact **T**ool for communit**Y**) dashboard is a tool developed to help visualize and quantify the warehouse footprint and environmental impact in Southern California. This dashboard is a result of a collaboration between the Redford Conservancy at Pitzer College and Radical Research LLC. The goal of this tool is to help community organizations understand and quantify the cumulative impacts of existing and planned warehouses. It builds off work done at the Redford Conservancy and published in the [Los Angeles Times](https://www.latimes.com/opinion/story/2022-05-01/inland-empire-warehouse-growth-map-environment).
 
+Please cite this open data product by referring to the journal article at [Environment and Planning B: Urban Analytics and City Science](https://journals.sagepub.com/doi/10.1177/23998083241262553).  
+
 ## Navigating the tool
 
 **Figure 1** shows an annotated layout of the dashboard that maps to the sections below.  
 
-![](www/annotated_dashboard2.png)  
+![](www/annotated_dashboard.png)  
 *Figure 1. Annotated Dashboard*
 
 ### 1. User Interface
@@ -49,7 +51,15 @@ These three inputs provide the fleet-averaged heavy-duty truck emissions per mil
 
 ##### Jobs per acre
 
-This input allows a user to estimate jobs provided by the selected warehouses at prescribed jobs per acre values.  The default value is 8 jobs per acre as estimated by a bottom-up comparison of Inland Empire warehouse jobs and acres in 2023. Values between 4 and 20 are allowed. 
+This input allows a user to estimate jobs provided by the selected warehouses at prescribed jobs per acre values.  The default value is 8 jobs per acre as estimated by a bottom-up comparison of Inland Empire warehouse jobs and acres in 2023. Values between 4 and 20 are allowed.
+
+##### Vacancy Rate
+
+This input allows a user to estimate the available warehouse space that is vacant.  The default is currently set to an average of the vacancy rates from LA county (3.8%) and the IE (6.3%) based on Q1 2024 industrial real estate reports.
+
+#### Download Polygons
+
+The warehouse dataset, including the geospatial polygons, can be download as a *.geojson* format data table. Warehouses exported will only include those currently selected using other user input selection options.
 
 ### 2. Summary stats table
 
@@ -62,6 +72,8 @@ The map can be navigated using point, click, and drag features or by clicking on
 The **Warehouses** overlay provides a red, maroon, and black layer of existing, approved, and CEQA review warehouses. Polygons for planned warehouses were drawn based on publicly available documents from [CEQANET](https://ceqanet.opr.ca.gov/Search/Recent) or city/county environmental documents. These warehouse polygons are for informational purposes only and should be checked on CEQANET to insure that they are up to date and reflect the most up-to-date information on individual projects.
 
 The **CalEnviroScreen** overlay provides a color-coded overlay of census tracts and their associated pollution burden percentile score. These scores are based on the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40). Darker colors indicate higher impact of pollution and socioeconomic disadvantage. Mousing over census tracts displays the census tract number, population, and percentile score (0-100). Full details on this layer are in the [CalEnviroScreen4.0 methodology](https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40).
+
+The **Rule 2305 Violators** overlay provides a visualization of the individual facilities that received Rule 2305 violations on December 14, 2023 from the South Coast Air Quality Management District.  Addresses were geocoded and locations are approximate.  If a warehouse is highlighted darkblue, it indicates that there is a warehouse parcel within 70 meters of the address and is the most likely facility receivign the violation. Note that some notices of violation are not identified as being in proximity to warehouses - some facilities are identified as manufacturing or non-warehouse facilities in assessor parcel datasets and do not get identified as warehouses in our methodology. Future versions may include these facilities.  
 
 ### 4. Detailed warehouse table
 
@@ -83,7 +95,7 @@ Parcel data was obtained from publicly available data warehouses maintained by t
 -   [Los Angeles County Open Data](https://data.lacounty.gov/datasets/assessor-parcels-data-2006-thru-2021/explore)
 -   Personal communications with staff at OC Public Works; <https://www.ocpublicworks.com/> and data from SCAQMD Rule 2305b Board Package Appendix C.   
 
-Parcel shapefiles were obtained April 2024 for Riverside and San Bernardino Counties, LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel.
+Parcel shapefiles were obtained October 2024 for Riverside and San Bernardino Counties, April 2024 for LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel. Some facilities are also associated with the 'Associated APN improvements' land-use category for multi-parcel facilities - these are currently being identified on a case-by-case basis.  
 
 Emissions factor pollution estimates for heavy-duty trucks (GVWR > 8,500 pounds) were generated from a VMT weighted calculation of EMFAC2021 based on Southern California Air Quality Management District fleet specific data for 2022 downloaded from <https://arb.ca.gov/emfac/> on October 23, 2022. Data and methodology for these fleet-average calculations is available upon request.   
 
@@ -157,4 +169,4 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
 ### Legal Disclaimer
 
-This open data product and the content herein is provided by the copyright holders and contributors 'AS IS', and 'WITH ALL FAULTS' with no guarantee of any kind as to the completeness or accuracy of the information and content and any express or implied warranties of merchantability and fitness for a particular purpose are expressly disclaimed. In no event shall the copyright holders or any contributors be liable for any direct, indirect, special, exemplary, or consequential  damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise), and whether known or unknown, foreseeable or unforeseeable, arising in any way out of the use of this open data product or any element hereof, even if advised of the possibility of such damage.   
+This open data product and the content herein is provided by the copyleft holders and contributors 'AS IS', and 'WITH ALL FAULTS' with no guarantee of any kind as to the completeness or accuracy of the information and content and any express or implied warranties of merchantability and fitness for a particular purpose are expressly disclaimed. In no event shall the copyleft holders or any contributors be liable for any direct, indirect, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise), and whether known or unknown, foreseeable or unforeseeable, arising in any way out of the use of this open data product or any element hereof, even if advised of the possibility of such damage.   

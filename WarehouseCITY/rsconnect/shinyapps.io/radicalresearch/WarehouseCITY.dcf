@@ -5,10 +5,8 @@ account: radicalresearch
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6233082
-bundleId: 6591594
+bundleId: 9222165
 url: https://radicalresearch.shinyapps.io/WarehouseCITY/
-when: 1670212522.06271
-lastSyncTime: 1670212522.06272
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: extras.R|geoJSON/finalParcels.geojson|geoJSON/warehouse.geoJSON|shapefile
+ignoredFiles: extras.R|geoJSON/comboFinal.geojson|geoJSON/finalParcels.geojson|geoJSON/plannedParcels.geojson|readme.html|shapefile/finalParcels.dbf|shapefile/finalParcels.prj|shapefile/finalParcels.shp|shapefile/finalParcels.shx|shapefile.zip
