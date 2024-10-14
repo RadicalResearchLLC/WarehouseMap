@@ -90,5 +90,86 @@ not_warehouse <- c('173180011',
                    '142150083',
                    '142080029',
                    '135170031',
-                   '')
-                   
+                   # APNs from 9/19/2024 MCM
+                   '151070007', # Collins Aerospace
+                   '921020051', # Millipore Sigma
+                   '921020043', # Skorpios Tech
+                   '921720015', # Abbott Vascular
+                   '963070017', # ALTO biolabs
+                   '330030020', # CR&R -dump
+                   '156370014', # various stores
+                   '101140031', # various stores
+                   '118340001', # various stores
+                   '119280069',
+                   '107080051', #aautomotive services
+                   '279530030', 
+                   '279530028',
+                   '279460006',
+                   '279470009',
+                   '279460058',
+                   '282160025',
+                   '283160046',
+                   '283180021',
+                   '177150009', # self storage)
+                   '210030013', # self storage
+                   '419250008', # self storage)
+                   '419232038', # self storage) 
+                   '419772005', # self storage)
+                   '538190015', # self storage))
+                   '538340001', # Enterprise
+                   '541170030', # self storage)
+                   '668280017', # vacant?
+                   '666120012', # vacant?
+                   '677420015', # # self storage)
+                   '693230016', # self storage)
+                   '694060026', # self storage)
+                   '626410044', # self storage)
+                   '607020048', # self storage)
+                   '606092016', # self storage)
+                   '610070010', # self storage)
+                   '611025053', # self storage)
+                   '611290001', # self storage)
+                   '612130004', # self storage)
+                   '603081021', # RV self storage)
+                   '763141021', # self storage)
+                   '763141025',#, #pipe supplier
+                   '439070063', # self storage)
+                   '439040024',# self storage)
+                   '439080028',# self storage)
+                   '439080019',# self storage)
+                   '442120014',# self storage)
+                   '442120002', # self storage)
+                   '443260012', # self storage)
+                   '456040040', # self storage)
+                   '921041011', #businesses
+                   '921020061', #various businesses
+                   '921020065', #manufacturer
+                   '921020055', #business park
+                   '921020049', #business park
+                   '921020050', #business park
+                   '105625101', #farm
+                   '101403103', #church
+                   '101507108', #parking lot
+                   '101515101', #playing fields
+                   '100723110', #mobile homes
+                   '107632146', #homes
+                   '020238136', #parking lot
+                   '024610105', 
+                   '027503127', 
+                   '028402127', #homes
+                   '028420239', #park
+                   '029404122',
+                   '017213124', ##ass'd improvements that aren't industrial
+                   '017325133', '017031101', '119929105', '120001114',
+                   '119967104', '027007107', '027008102', '032804217',
+                   '034909107', '032231114', '045922104', '310618115',
+                   '044101147', '047229219', '046305105',
+                   '014222202', '014223107', '028315160', '028124220',
+                   '029216219', '017325108', '030305117', '030318109',
+                   '032104113', '060020109', '060020103',
+                   '027007102', '027008103', '028804106',
+                   '119927103', '119929104', '120003101',
+                   '120108101', '120132101', '119237104', '030304118',
+                   '026661101', '026845308'
+)
+

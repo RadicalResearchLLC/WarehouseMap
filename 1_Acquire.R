@@ -47,6 +47,7 @@ sq_ft_threshold_WH <- 28000
 sq_ft_threshold_maybeWH <- 150000
 
 ## Process County Data using County Scripts
+source('QA_list.R')
 
 source('Riverside.R')
 source('SanBernardino.R')
@@ -89,8 +90,6 @@ rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SB
 
 ##Import QA list of warehouses and non-warehouses 
 ##FIXME - move this up for when we identify warehouses currently not on the list
- 
-source('QA_list.R')
 
 joined_parcels <- joined_parcels |>
   filter(apn %ni% not_warehouse) #|>
@@ -128,20 +127,23 @@ CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) |>
 plannedWH.url <- 'https://github.com/RadicalResearchLLC/CEQA_tracker/raw/main/CEQA_WH.geojson'
 plannedWarehouses <- st_read(plannedWH.url) |> 
   st_transform(crs = 4326) |> 
-  filter(county %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) |> 
-  select(project, ceqa_url, sch_number, stage_pending_approved, category, parcel_area, geometry) |> 
-  filter(category != 'Built')
+  filter(county %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) |>
+  mutate(category = ifelse(stage_pending_approved != 'Approved', 'CEQA Review',
+                           'Approved')) #|> 
+#  select(project, ceqa_url, sch_number, stage_pending_approved, category, parcel_area, geometry)
+
+source('BuiltWH_intersect.R')
 
 #shape_area <- st_area(plannedWarehouses)
 
-planned_tidy <- plannedWarehouses |> 
-  mutate(shape_area =  round(parcel_area, -3),
-         class = stage_pending_approved,
-         year_chr = 'future',
-         year_built = 2025,
-         type = 'warehouse',
-         row = row_number()) |> 
-  select(-parcel_area, -stage_pending_approved)
+#planned_tidy <- plannedWarehouses |> 
+#  mutate(shape_area =  round(parcel_area, -3),
+#         class = stage_pending_approved,
+#         year_chr = 'future',
+##         year_built = 2025,
+#         type = 'warehouse',
+#         row = row_number()) |> 
+#  select(-parcel_area, -stage_pending_approved)
 
 Counties <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/community_geojson/California_County_Boundaries.geojson') |> 
   filter(COUNTY_NAME %in% c('Los Angeles', 'Orange', 'Riverside', 'San Bernardino')) |> 
@@ -150,13 +152,6 @@ Counties <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/community_geojson/California_
   mutate(county = str_c(county, ' County'))
 
 planned_final <- planned_tidy |> 
-  st_centroid() |> 
-  st_join(Counties) |> 
-  st_set_geometry(value = NULL) |> 
-  inner_join(planned_tidy) |>
-  #filter(row != 342) |> 
-  st_as_sf() |> 
-  st_transform(crs=4326)  |> 
   select(-row) |> 
   mutate(floorSpace.sq.ft = 0.55*shape_area) |> 
   rename(name = project)
@@ -248,5 +243,6 @@ st_write(combo_final, 'finalParcels.shp', append = FALSE)
 #st_write(planned_final, 'plannedParcels.shp', append = FALSE)
 
 setwd(wd)
+
 
 

@@ -2,7 +2,7 @@
 ##Created by Mike McCarthy, Radical Research LLC
 ##San Bernardino County Data Import and Processing Steps
 ##First created July, 2023
-##Last modified December, 2023
+##Last modified September, 2024
 
 library(tidyverse)
 library(sf)
@@ -62,7 +62,11 @@ partialParcels <- c('111804107', '111804108', '111804109', '111804110',
                   '102212109', '102212112', '102242118', '102253112',
                   '102254108', '102246107', '102163103', '102163104', 
                   '102851108', '102851106', '102851105',
-                  '025215196', '025215198')
+                  '025215196', '025215198',
+                  '045919310',# VCV site
+                  '102610102',#says it is part of state prison?
+                  '102708103' # part of majestic chino 
+                  )
 
 SBD_warehouse_2 <- SBD_parcels |> 
   filter(APN %in% partialParcels) |> 
@@ -113,13 +117,24 @@ compare <- narrow_SBDCo_parcels |>
   left_join(wYearValue, by = 'apn_formatted') |> 
   mutate(diff_yr = year_built - year_base) #|> 
 
+SBD_airhub <- sf::st_read(dsn = 'SBD_AmazonAirHub.geojson') |> 
+  st_transform(crs = 4326) |> 
+  rename(apn = name) |> 
+  mutate(class = 'aviation warehouse',
+         year_built = 2020,
+         county = 'San Bernardino',
+         type = 'warehouse',
+         shape_area = 4229700)
+
 narrow_SBDCo_parcels2 <- compare |> 
   mutate(year_built2 = ifelse(is.na(year_built), year_base, year_built)) |> 
   dplyr::select(apn, shape_area, class, type, geometry, year_built2, county) |> 
-  rename(year_built = year_built2)
+  rename(year_built = year_built2) |> 
+  filter(apn %ni% not_warehouse) |> 
+  bind_rows(SBD_airhub)
 
 rm(ls = DataTree, compare, narrow_SBDCo_parcels, noYearValue, SBD_codes, SBD_parcels,
-   SBD_warehouse_ltInd, wYearValue, SBD_warehouse_2)
+   SBD_warehouse_ltInd, wYearValue, SBD_warehouse_2, SBD_airhub)
 
 
 setwd(wd)

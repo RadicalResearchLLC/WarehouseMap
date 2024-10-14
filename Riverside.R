@@ -34,7 +34,7 @@ crest_property_dups <- crest_property_slim |>
                       ifelse(YEAR_BUILT < 1911, 1, 0))) |>
   filter(unk == 0) |>
   group_by(PIN) |>
-  summarize(PIN, YEAR_BUILT = min(YEAR_BUILT), .groups = 'drop') |>
+  reframe(PIN, YEAR_BUILT = min(YEAR_BUILT), .groups = 'drop') |>
   unique()
 
 crest_property_dups2 <- crest_property_slim |>
@@ -58,20 +58,20 @@ crest_property_tidy <- bind_rows(crest_property_solo, crest_property_dups2)
 parcels_warehouse <- parcels |>
   mutate(class = stringr::str_to_lower(CLASS_CODE)) |>
   filter(str_detect(class, 'warehouse')) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  st_transform(crs = 4326)
 
 source(paste0(wd, '/QA_list2.R'))
 
 parcels_manual_wh <- parcels |> 
   mutate(class = stringr::str_to_lower(CLASS_CODE)) |>
   filter(APN %in% add_as_warehouse) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  st_transform(crs = 4326)
 
 parcels_lightIndustry <- parcels |>
   mutate(class = stringr::str_to_lower(CLASS_CODE)) |>
   filter(str_detect(class, 'light industrial')) |>
   filter(SHAPE_Area > sq_ft_threshold_maybeWH) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  st_transform(crs = 4326)
 
 ##Bind two Riv.co. datasets together
 ##Create a type category for the warehouse and industrial designation parcels
@@ -89,7 +89,8 @@ narrow_RivCo_parcels <- parcels_join_yr |>
   dplyr::select(APN, SHAPE_Area, class, type, SHAPE, YEAR_BUILT) |>
   janitor::clean_names() |>
   st_cast(to = 'POLYGON') |> 
-  mutate(county = 'Riverside')
+  mutate(county = 'Riverside') |> 
+  filter(apn %ni% not_warehouse)
 
 st_geometry(narrow_RivCo_parcels) <- 'geometry'
 
