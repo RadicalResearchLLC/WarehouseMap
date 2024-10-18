@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified June, 2024
+##Last modified October, 2024
 ##This script acquires and tidy parcel data for the app
 
 #rm(list =ls()) # clear environment
@@ -15,6 +15,7 @@ gc()
 library(tidyverse)
 library(janitor)
 library(readxl)
+library(tigris)
 
 ##spatial libraries and visualization annotation
 #library(leaflet)
@@ -111,10 +112,27 @@ final_parcels <- joined_parcels |>
   st_make_valid() |> 
   mutate(county = str_c(county, ' County'))
 
-##import 
+##import places and counties
 setwd(wd)
-jurisdictions <- sf::st_read(dsn = paste0(jurisdiction_jur, 'SoCal_jurisdictions.geojson')) |> 
-  clean_names()
+Counties <- counties(state = 'CA', cb = TRUE, year = 2023) |> 
+  filter(NAME %in% c('Los Angeles', 'Orange', 'Riverside', 'San Bernardino')) |> 
+  select(NAME, geometry) |> 
+  rename(county = NAME) |> 
+  mutate(county = str_c(county, ' County')) |> 
+  st_transform(crs = 4326)
+
+##This is just a one step temp file to add to jurisdictions list
+addCounty <- Counties |> 
+  rename(name = county)
+
+jurisdictions <- places(state = 'CA', cb = TRUE, year = 2023) |> 
+  clean_names() |> 
+  st_transform(crs = 4326) |> 
+  st_filter(Counties) |> 
+  select(name) |> 
+  bind_rows(addCounty)
+
+rm(ls= addCounty)
 
 ##Import CalEnviroScreen
 CalEJ4 <- sf::st_read(dsn = calEJScreen_dir, quiet = TRUE, type = 3) |>
@@ -144,12 +162,6 @@ source('BuiltWH_intersect.R')
 #         type = 'warehouse',
 #         row = row_number()) |> 
 #  select(-parcel_area, -stage_pending_approved)
-
-Counties <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/community_geojson/California_County_Boundaries.geojson') |> 
-  filter(COUNTY_NAME %in% c('Los Angeles', 'Orange', 'Riverside', 'San Bernardino')) |> 
-  select(COUNTY_NAME, geometry) |> 
-  rename(county = COUNTY_NAME) |> 
-  mutate(county = str_c(county, ' County'))
 
 planned_final <- planned_tidy |> 
   select(-row) |> 
@@ -219,16 +231,22 @@ rm(ls = County_centroids, Jurisdiction_list, narrow_jurisdiction, combo_centroid
 rm(ls = joined_parcels)
 
 ##Import Assembly and Senate Districts
-assembly <- sf::st_read('C:/Dev/CA_spatial_data/SoCalLegislativePolygons.geojson') |> 
-  st_transform(crs = 4326)
-senate <- sf::st_read('C:/Dev/CA_spatial_data/SenateDistrictsCA.geojson') |> 
+senate2 <- state_legislative_districts(state = 'CA', cb = TRUE, 
+                                       house = 'upper', year = 2023) |> 
   st_transform(crs = 4326) |> 
   st_filter(Counties) |> 
-  select(SenateDistrictLabel, geometry) |> 
-  rename(DistrictLabel = SenateDistrictLabel) #|> 
+  mutate(DistrictLabel = str_c('SD ', NAME)) |> 
+  select(DistrictLabel, geometry)
 
-districts <- bind_rows(assembly, senate)
-rm(ls = assembly, senate)
+assembly2 <- state_legislative_districts(state = 'CA', cb = TRUE, 
+                                         house = 'lower', year = 2023) |> 
+  st_transform(crs = 4326) |> 
+  st_filter(Counties) |> 
+  mutate(DistrictLabel = str_c('AD ', NAME)) |> 
+  select(DistrictLabel, geometry)
+
+districts <- bind_rows(assembly2, senate2)
+rm(ls = assembly2, senate2)
 
 ##Include analysis of WAIRE NoV rules
 source('WAIRE_NOV.R')

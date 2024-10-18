@@ -15,8 +15,8 @@ library(markdown)
 library(shinycssloaders)
 library(bslib)
 
-deploy_date <- 'October 14, 2024'
-version <- 'Warehouse CITY v1.21, last updated'
+deploy_date <- 'October 18, 2024'
+version <- 'Warehouse CITY v1.21a, last updated'
 sf_use_s2(FALSE)
 ## Define UI for application that displays warehouses
 # Show app name and logos
@@ -70,7 +70,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
                 width = '200px'),
              checkboxInput(inputId = 'UnknownYr', 
                 label = 'Display parcels with unknown year built', value = TRUE),
-             sliderInput('radius', 'Circle (radius in km)', min = 1, max = 10, value = 5, step =1),
+             sliderInput('radius', 'Circle (radius in km)', min = 1, max = 20, value = 5, step =1),
              actionButton(inputId = 'Reset', label = 'Reset circle'),
             hr(),
             div(
@@ -547,4 +547,4 @@ output$ExportPoly <- downloadHandler(
 
 }
 # Run the application 
-shinyApp(ui = ui, server = server, options=c(launch.browser = .rs.invokeShinyWindowViewer))
+shinyApp(ui = ui, server = server)

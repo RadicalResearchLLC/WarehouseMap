@@ -5,7 +5,7 @@ account: radicalresearch
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6233082
-bundleId: 9222165
+bundleId: 9241831
 url: https://radicalresearch.shinyapps.io/WarehouseCITY/
 asMultiple: FALSE
 asStatic: FALSE

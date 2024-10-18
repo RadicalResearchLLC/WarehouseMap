@@ -50,7 +50,8 @@ planned_tidy <- planned_notBuilt |>
          year_built = 2025,
          type = 'warehouse',
          row = row_number()) |> 
-  select(-parcel_area, -stage_pending_approved)
+  select(-parcel_area, -stage_pending_approved) |> 
+  mutate(county = str_c(county, ' County'))
 
 rm(ls = planned_notBuilt, approved_built_since2022,
    check_wh_list, check_wh_list2, earlier_projects,
