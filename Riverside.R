@@ -7,10 +7,11 @@
 library(tidyverse)
 library(sf)
 
+# Data from https://rcitgis-countyofriverside.hub.arcgis.com/pages/6bfb06af75af4addbf79b8cb421facb9
 RivCo1_dir <- paste0(warehouse_dir, '/CREST_tables.gdb')
 RivCo2_dir <- paste0(warehouse_dir, '/ParcelAttributed.gdb')
 
-# Data from https://gis2.rivco.org/
+
 ##Import parcels and property record files for Riverside County
 ##st_read(type=1) is attempting to create the same sfc type for both counties
 ##FIXME - crest property just a table?

@@ -59,7 +59,10 @@ narrow_OC_parcels <- sf::st_read('OC_whFixed.geojson') |>
   select(apn, shape_area, class, type, built_year, geometry, county) |> 
   rename(year_built = built_year)
 narrow_LA_parcels <- sf::st_read(dsn = 'C:/Dev/WarehouseMap/Warehouse_data/LAfiltered_shp') |> 
-  select(-count)
+  select(-count) |> 
+  mutate(year_built = as.numeric(year_built)) |> 
+  select(-use_code) |> 
+  select(apn, shape_area, class, type, year_built, county, geometry)
 
 gc()
 
@@ -91,7 +94,6 @@ rm(ls = LA_warehouse_parcels, narrow_LA_parcels, narrow_RivCo_parcels, narrow_SB
 
 ##Import QA list of warehouses and non-warehouses 
 ##FIXME - move this up for when we identify warehouses currently not on the list
-
 joined_parcels <- joined_parcels |>
   filter(apn %ni% not_warehouse) #|>
 ##Check for warehouse duplicates by location
@@ -114,7 +116,9 @@ final_parcels <- joined_parcels |>
 
 ##import places and counties
 setwd(wd)
-Counties <- counties(state = 'CA', cb = TRUE, year = 2023) |> 
+## Currently broken tigris due to Trump
+
+Counties <- tigris::counties(state = 'CA', cb = TRUE, year = 2022) |> 
   filter(NAME %in% c('Los Angeles', 'Orange', 'Riverside', 'San Bernardino')) |> 
   select(NAME, geometry) |> 
   rename(county = NAME) |> 
@@ -146,6 +150,7 @@ plannedWH.url <- 'https://github.com/RadicalResearchLLC/CEQA_tracker/raw/main/CE
 plannedWarehouses <- st_read(plannedWH.url) |> 
   st_transform(crs = 4326) |> 
   filter(county %in% c('Riverside', 'San Bernardino', 'Los Angeles', 'Orange')) |>
+  filter(is.na(status)) |> 
   mutate(category = ifelse(stage_pending_approved != 'Approved', 'CEQA Review',
                            'Approved')) #|> 
 #  select(project, ceqa_url, sch_number, stage_pending_approved, category, parcel_area, geometry)
