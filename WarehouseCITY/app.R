@@ -15,12 +15,13 @@ library(markdown)
 library(shinycssloaders)
 library(bslib)
 
-deploy_date <- 'October 18, 2024'
-version <- 'Warehouse CITY v1.21a, last updated'
+deploy_date <- 'June 13, 2025'
+version <- 'Warehouse CITY v1.23, last updated'
 sf_use_s2(FALSE)
 ## Define UI for application that displays warehouses
 # Show app name and logos
-ui <- fluidPage(title = 'Warehouse CITY',
+ui <- fluidPage(
+  title = 'Warehouse CITY',
   tags$style(type="text/css", "div.info.legend.leaflet-control br {clear: both;}"),
     titlePanel(
       fluidRow(column(1),
@@ -65,8 +66,8 @@ ui <- fluidPage(title = 'Warehouse CITY',
              ),
               numericInput('year_slider', 'Select warehouses built by', 
                 min = 1980, 
-                max = 2025, 
-                value = 2025,
+                max = 2030, 
+                value = 2030,
                 width = '200px'),
              checkboxInput(inputId = 'UnknownYr', 
                 label = 'Display parcels with unknown year built', value = TRUE),
@@ -93,7 +94,7 @@ ui <- fluidPage(title = 'Warehouse CITY',
                   min = 1, max = 5, step = 0.01, width = '200px'),
                 numericInput(inputId = 'Jobs', label = 'Jobs per acre', value = 8,
                    min = 4, max = 20, step = 1, width = '200px'),
-                numericInput(inputId = 'VacancyRate', label = 'Vacancy rate (%)', value = 7.5,
+                numericInput(inputId = 'VacancyRate', label = 'Vacancy rate (%)', value = 4.9,
                   min = 0, max = 15, step = 0.1, width = '200px')
             ),
             hr(),
@@ -162,8 +163,27 @@ output$map <- renderLeaflet({
       addMapPane('Circle', zIndex = 400) |>  
       addMapPane('Warehouses', zIndex = 410)  |>
       addMapPane('CalEnviroScreen', zIndex = 402)  |>
+      addMapPane('Rule 2305 Violators', zIndex = 415) |> 
       hideGroup(c('Rail', 'CalEnviroScreen', 'Size bins', 
-                  'Rule 2305 Violators'))
+                  'Rule 2305 Violators')) |> 
+      addCircleMarkers(data = lat_longs_geocodio,
+                       color = 'cyan',
+                       label = ~paste(name, addr),
+                       weight = 1,
+                       group = 'Rule 2305 Violators')  |>
+      addPolygons(data = warehouses_NOV,
+                  color = 'darkblue',
+                  weight = 1,
+                  fillOpacity = 0.9,
+                  group = 'Rule 2305 Violators') |> 
+      addPolygons(data = CalEJ4_75,
+                  color = ~qpal(CIscoreP), 
+                  weight = 0.8, 
+                  opacity = 0.8,
+                  fillColor = ~qpal(CIscoreP),
+                  label = ~htmlEscape(paste('Tract', Tract, ';', ' Score', 
+                                            round(CIscoreP, 0), '; population ', TotPop19)),
+                  group = 'CalEnviroScreen')
     })
 
 #OrBr <- c('beige' = '#EEE1B1',
@@ -184,7 +204,7 @@ observe({
   })
 #Remove circle
 observeEvent(input$Reset,   
-  {leafletProxy("map", data = circle())  |>
+  {leafletProxy("map", data = circle(l))  |>
     clearGroup(group = 'Circle')
   }
 )
@@ -199,23 +219,24 @@ observe({
                 weight = 2,
                 group = 'Jurisdictions')
 })
+
 #CalEnviroScreen4.0 census tracts
 CalEJ4_75 <- CalEJ4  |>
   filter(CIscoreP >= 0.0)
 
 qpal <- colorQuantile('magma', CalEJ4_75$CIscoreP, n = 5, reverse = TRUE)
 
-observe({
-  leafletProxy("map", data = CalEJ4_75)  |>
-    clearGroup(group = 'CalEnviroScreen')  |>
-    addPolygons(color = ~qpal(CIscoreP), 
-                weight = 0.8, 
-                opacity = 0.8,
-                fillColor = ~qpal(CIscoreP),
-                label = ~htmlEscape(paste('Tract', Tract, ';', ' Score', 
-                  round(CIscoreP, 0), '; population ', TotPop19)),
-                group = 'CalEnviroScreen')
-})
+#observe({
+#  leafletProxy("map", data = CalEJ4_75)  |>
+#    clearGroup(group = 'CalEnviroScreen')  |>
+#    addPolygons(color = ~qpal(CIscoreP), 
+#                weight = 0.8, 
+#                opacity = 0.8,
+#                fillColor = ~qpal(CIscoreP),
+#                label = ~htmlEscape(paste('Tract', Tract, ';', ' Score', 
+#                  round(CIscoreP, 0), '; population ', TotPop19)),
+#                group = 'CalEnviroScreen')
+#})
 
 WHPal <- colorFactor(palette = c('red', 'black', '#F7971D'), domain = combo_final$category)
 
@@ -229,20 +250,20 @@ observe({
                 label = ~htmlEscape(paste(apn, class, round(shape_area,-3), ' sq.ft.',  year_built))) 
 })
 
-observe({
-  leafletProxy("map")  |>
-    clearGroup(group = 'Rule 2305 Violators')  |>
-    addCircleMarkers(data = lat_longs_geocodio,
-                color = 'cyan',
-                label = ~paste(company_name, addr),
-                weight = 1,
-                group = 'Rule 2305 Violators')  |>
-    addPolygons(data = warehouses_NOV,
-                color = 'darkblue',
-                weight = 1,
-                fillOpacity = 0.9,
-                group = 'Rule 2305 Violators')
-})
+#observe({
+#  leafletProxy("map")  |>
+#    clearGroup(group = 'Rule 2305 Violators')  |>
+ #   addCircleMarkers(data = lat_longs_geocodio,
+#                color = 'cyan',
+#                label = ~paste(company_name, addr),
+#                weight = 1,
+#                group = 'Rule 2305 Violators')  |>
+#    addPolygons(data = warehouses_NOV,
+#                color = 'darkblue',
+##                weight = 1,
+#                fillOpacity = 0.9,
+ #               group = 'Rule 2305 Violators')
+#})
 
 ## Generate a data table of warehouses in selected reactive data
 output$warehouseDF <- DT::renderDT(

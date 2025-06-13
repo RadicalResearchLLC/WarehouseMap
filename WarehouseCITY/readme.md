@@ -1,4 +1,4 @@
-# Warehouse CITY Documentation (v1.21)
+# Warehouse CITY Documentation (v1.23)
 
 ## Introduction
 
@@ -23,7 +23,8 @@ Alternatively, users can now select California state legislative districts for s
 
 #### Select warehouses built by
 
-The numeric input allows a user to select subsets of warehouses with build years before a selected year. For example, if the user selects 2011 all warehouses with build years up to and including 2011 are displayed. All warehouses built prior to 1980 are set as 1980 build years for the purpose of this dashboard display but raw data can be provided for build years upon request.  Note that approximately 400 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1980 for selection purposes in the slider tool. Similarly, the year 2025 is a proxy for planned or approved warehouses that have not yet been built.
+The numeric input allows a user to select subsets of warehouses with build years before a selected year. For example, if the user selects 2011 all warehouses with build years up to and including 2011 are displayed. All warehouses built prior to 1980 are set as 1980 build years for the purpose of this dashboard display but raw data can be provided for build years upon request.  Note that approximately 400 parcels had unknown build years; those can be removed or added to any analysis with a check box button and are set as 1980 for selection purposes in the slider tool. The year 2027 is a proxy for approved warehouses that have not yet been built; the year 2030 is
+a proxy for projects undergoing CEQA review.
 
 #### Circle (radius in km) slider
 
@@ -31,7 +32,7 @@ This slider allows the user to alter the radius of a great circle for selecting 
 
 #### Advanced User Input Options 
 
-Selecting the checkbox displays set of numeric input options for advanced users to input user defined values for warehouse floor space, truck trips, and pollution emissions. Altering these values will change the displayed outputs in the summary table above the map.  
+Selecting the checkbox displays set of numeric input options for advanced users to input user defined values for warehouse floor space, truck trips, pollution emissions, job, and vacancy rates. Altering these values will change the displayed outputs in the summary table above the map.  
 
 ##### Floor area ratio
 
@@ -55,7 +56,7 @@ This input allows a user to estimate jobs provided by the selected warehouses at
 
 ##### Vacancy Rate
 
-This input allows a user to estimate the available warehouse space that is vacant.  The default is currently set to an average of the vacancy rates from LA county (3.8%) and the IE (6.3%) based on Q1 2024 industrial real estate reports.
+This input allows a user to estimate the available warehouse space that is vacant.  The default is currently set to an average of the Greater Los Angeles area vacancy rates on Q1 2025 industrial real estate reports from [Colliers](https://www.colliers.com/en/research/los-angeles/greater-los-angeles-industrial-research-report-2025-q1).
 
 #### Download Polygons
 
@@ -63,7 +64,7 @@ The warehouse dataset, including the geospatial polygons, can be download as a *
 
 ### 2. Summary stats table
 
-Directly above the map is a table that provides summary statistics for the user selected warehouses. The summary table includes the count of warehouses, the acreage of the warehouse footprint, the total warehouse floor space in square feet, the number of estimated daily truck trips, an estimate of the daily diesel PM<sub>2.5</sub>, NO<sub>x</sub>, and CO<sub>2</sub> emissions from those truck trips, and a jobs estimate. The table updates as the user selects different year ranges, clicks on different sections of the map, chooses  jurisdiction(s), or enters advanced user inputs. Note that this estimate does not include car trips to and from warehouses in the emissions calculation, nor does it include truck idling emissions. Finally, it separates estimates for existing warehouses (already built) and planned, approved, or under construction warehouses which aren't yet in service. The details on these calculations are discussed in the Methods section.
+Directly above the map is a table that provides summary statistics for the user selected warehouses. The summary table includes the count of warehouses, the acreage of the warehouse footprint, the total warehouse floor space in square feet, the number of estimated daily truck trips, an estimate of the daily diesel PM<sub>2.5</sub>, NO<sub>x</sub>, and CO<sub>2</sub> emissions from those truck trips, and a jobs estimate. The table updates as the user selects different year ranges, clicks on different sections of the map, chooses jurisdiction(s), or enters advanced user inputs. Note that this estimate does not include car trips to and from warehouses in the emissions calculation, on-site forklift emissions, on-site hostler emissions, nor does it include truck idling emissions. Finally, it separates estimates for existing warehouses (already built) and planned, approved, or under construction warehouses which aren't yet in service. The details on these calculations are discussed in the Methods section.
 
 ### 3. Map
 
@@ -90,12 +91,12 @@ Data provenance and processing steps to create the open data product are describ
 
 Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernardino, and Los Angeles. Orange County data assessor data is not publicly available and was obtained through personal communication with OC public works and a specialized query of the SCAG dataset provided in May 2022.
 
--   [Riverside County Open Data](https://gis2.rivco.org/)
+-   [Riverside County IT GIS](https://rcitgis-countyofriverside.hub.arcgis.com/pages/6bfb06af75af4addbf79b8cb421facb9)
 -   [San Bernardino County Open Data](https://open.sbcounty.gov/datasets/countywide-parcels/about)
 -   [Los Angeles County Open Data](https://data.lacounty.gov/datasets/assessor-parcels-data-2006-thru-2021/explore)
 -   Personal communications with staff at OC Public Works; <https://www.ocpublicworks.com/> and data from SCAQMD Rule 2305b Board Package Appendix C.   
 
-Parcel shapefiles were obtained October 2024 for Riverside and San Bernardino Counties, April 2024 for LA County, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel. Some facilities are also associated with the 'Associated APN improvements' land-use category for multi-parcel facilities - these are currently being identified on a case-by-case basis.  
+Parcel shapefiles were obtained June 2025 for Riverside, San Bernardino, and Los Angeles Counties, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel. Some facilities are also associated with the 'Associated APN improvements' land-use category for multi-parcel facilities - these are currently being identified on a case-by-case basis.  
 
 Emissions factor pollution estimates for heavy-duty trucks (GVWR > 8,500 pounds) were generated from a VMT weighted calculation of EMFAC2021 based on Southern California Air Quality Management District fleet specific data for 2022 downloaded from <https://arb.ca.gov/emfac/> on October 23, 2022. Data and methodology for these fleet-average calculations is available upon request.   
 
@@ -144,7 +145,7 @@ While the dataset is awesome, it does have a number of limitations. Multiples is
 
 -   **Duplicate records** - some parcel numbers have multiple records for build year which can lead to double-counting area, truck trips, and emissions. When duplicates occur, we are using the earliest build year from the parcel database which may not account for parcel modifications or expansions. Additionally, some parcels in Los Angeles County had multiple parcel numbers associated with the same warehouse; only one parcel number was allowed for these warehouses to avoid double counting. 
 
--   **Emissions calculations** - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. This information is not readily available at the time but could be incorporated in later versions if individual facility information becomes available through the SCAQMD Rule 2305 reporting or other datasets. Moreover, it includes no emissions from light-duty vehicles from workers or other indirect effects of warehouses.  
+-   **Emissions calculations** - emissions are based on a set of emissions factors that do not account for the heterogeneity of truck trips by warehouse type (cold storage, dry storage, distribution facilities, etc.), nor the variability in truck trip distances based on location of the facility. It does not include emissions from hostlers, forklifts, or other on-site emissions. This information is not readily available at the time but could be incorporated in later versions if individual facility information becomes available through the SCAQMD Rule 2305 reporting or other datasets. Moreover, it includes no emissions from light-duty vehicles from workers or other indirect effects of warehouses.  
 
 -  **Planned and Approved Warehouses** - the new planned and approved warehouses list is a comprehensive effort to identify warehouses in the development phase. This includes all CEQANET documents for the four county region from 2018 (when CEQANET reporting became mandatory).  When there are overlays of planned warehouses over existing parcels it is usually due to an industrial infill project replacing an existing warehouse.  All planned and approved projects have a link to the CEQANET environmental documents starting in v1.19 under the 'class' column of the Detailed Table. These polygons represent individually drawn parcel extents from environmental planning documents, but may not represent final project boundaries, especially for larger warehouse complexes.  
 

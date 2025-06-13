@@ -170,8 +170,12 @@ source('BuiltWH_intersect.R')
 
 planned_final <- planned_tidy |> 
   select(-row) |> 
-  mutate(floorSpace.sq.ft = 0.55*shape_area) |> 
-  rename(name = project)
+  mutate(floorSpace.sq.ft = 0.55*shape_area,
+         year_built = ifelse(document_type_bins == 'Approved',
+                             2027, 2030)
+         ) |>
+  #FIXME update years
+  rename(name = project) 
 
 setwd(output_dir)
 unlink('final_parcels_gt1acre.geojson')
