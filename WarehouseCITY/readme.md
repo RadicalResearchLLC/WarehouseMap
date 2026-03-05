@@ -1,4 +1,4 @@
-# Warehouse CITY Documentation (v1.23)
+# Warehouse CITY Documentation (v1.24)
 
 ## Introduction
 
@@ -56,7 +56,7 @@ This input allows a user to estimate jobs provided by the selected warehouses at
 
 ##### Vacancy Rate
 
-This input allows a user to estimate the available warehouse space that is vacant.  The default is currently set to an average of the Greater Los Angeles area vacancy rates on Q1 2025 industrial real estate reports from [Colliers](https://www.colliers.com/en/research/los-angeles/greater-los-angeles-industrial-research-report-2025-q1).
+This input allows a user to estimate the available warehouse space that is vacant.  The default is currently set to an average of the Greater Los Angeles area vacancy rates on Q4 2025 industrial real estate reports from [Colliers](https://www.colliers.com/en/research/los-angeles/greater-los-angeles-industrial-research-report-2025-q4).
 
 #### Download Polygons
 
@@ -92,11 +92,14 @@ Data provenance and processing steps to create the open data product are describ
 Parcel data was obtained from publicly available data warehouses maintained by the counties of Riverside, San Bernardino, and Los Angeles. Orange County data assessor data is not publicly available and was obtained through personal communication with OC public works and a specialized query of the SCAG dataset provided in May 2022.
 
 -   [Riverside County IT GIS](https://rcitgis-countyofriverside.hub.arcgis.com/pages/6bfb06af75af4addbf79b8cb421facb9)
--   [San Bernardino County Open Data](https://open.sbcounty.gov/datasets/countywide-parcels/about)
+-   [San Bernardino County Open Data](https://open-data-sbcounty.hub.arcgis.com/datasets/0b5ac95331bb4be29b2a1aa2a94abc7b_0/explore?location=34.820589%2C-115.931585%2C8)
 -   [Los Angeles County Open Data](https://data.lacounty.gov/datasets/assessor-parcels-data-2006-thru-2021/explore)
 -   Personal communications with staff at OC Public Works; <https://www.ocpublicworks.com/> and data from SCAQMD Rule 2305b Board Package Appendix C.   
+-   [CEQANET](https://ceqanet.opr.ca.gov/Search/Advanced) data were queries for industrial projects to help create the planned and approved warehouse list.
 
-Parcel shapefiles were obtained June 2025 for Riverside, San Bernardino, and Los Angeles Counties, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel. Some facilities are also associated with the 'Associated APN improvements' land-use category for multi-parcel facilities - these are currently being identified on a case-by-case basis.  
+Parcel shapefiles were obtained March 2026 for Riverside, San Bernardino, and Los Angeles Counties, and May 18, 2022 for Orange County. Data from the County websites are provided 'as is' and have multiple limitations in their use for this application. For Riverside County, parcels were filtered based on parcel use codes including the words 'warehouse' and 'light industrial'. For San Bernardino County, the following land-use types were selected: warehouse, flex, light industry, and storage; we then excluded the following categories: 'retail warehouse', 'lumber storage', 'mini storage (public)', 'storage yard', 'auto storage yard', 'boat storage yard', 'grain storage', 'potato storage', 'bulk fertilizer storage', and 'mini-storage warehouse'. Los Angeles County parcels were filtered for the land-use category of 'Warehousing, Distribution, and Storage'. 'Open Storage' was not included, even though many shipping containers around the ports are being stored in this class of parcel. Some facilities are also associated with the 'Associated APN improvements' land-use category for multi-parcel facilities - these are currently being identified on a case-by-case basis.  
+
+Planned and approved warehouses are based on a review of industrial projects from CEQANET from 2020 through 2026 for each of the four counties. Polygons for these projects may be individual warehouses (typical for projects under 400,000 square feet) or warehouse complexes (multiple warehouses - typical for projects with more than 1.5 million square feet). Planned and approved warehouse projects include projects available that are undergoing CEQA review, have been approved, and under construction projects.  This portion of the dataset is a comprehensive look at the regional warehouse growth areas, but individual projects may be rejected or not get built depending on market conditions.  
 
 Emissions factor pollution estimates for heavy-duty trucks (GVWR > 8,500 pounds) were generated from a VMT weighted calculation of EMFAC2021 based on Southern California Air Quality Management District fleet specific data for 2022 downloaded from <https://arb.ca.gov/emfac/> on October 23, 2022. Data and methodology for these fleet-average calculations is available upon request.   
 
@@ -106,7 +109,6 @@ Warehouses were selected for display if their building size was over 1 acre, whi
 
 Parcel areas as reported in the assessor databases include total square footage of the parcel footprint. Warehouse building space footprints are unlikely to use the full parcel and often require space for parking lots, loading bays, and setbacks that will result in an over-estimate of warehouse square footage. Our default estimate for building floor space is a floor-area ratio (**FAR**) of **0.55**, which is consistent with industrial zoning in some jurisdictions in Riverside County.
 
-Planned and approved warehouses are based on a review of [CEQANET](https://ceqanet.opr.ca.gov/Search/Advanced) industrial projects with MND or EIR documentation from 2020 through 2023 for each of the four counties. Polygons for these projects may be individual warehouses (typical for projects under 400,000 square feet) or warehouse complexes (multiple warehouses - typical for projects with more than 1.5 million square feet). Planned and approved warehouse projects include projects available that are undergoing CEQA review, have been approved, and under construction projects.  This portion of the dataset is a comprehensive look at the regional warehouse growth areas, but individual projects may be rejected or not get built depending on market conditions.  
 
 Default truck trip estimates are based on South Coast Air Quality Management District indirect warehouse source rule requirements for warehouses greater than 100,000 sq.ft. without truck trip counts [Rule 2305](http://www.aqmd.gov/docs/default-source/rule-book/reg-xxiii/r2305.pdf?sfvrsn=15). The alpha version of the dashboard uses the default weighted truck trip rate of 0.67 heavy duty truck trips per thousand sq.ft of building space from Rule 2305. As noted earlier, the assessor database sq.ft. for the parcel has a 0.55 multiplier to the parcel area to estimate the indoor building area. Thus, the calculation for truck trips is shown below.
 

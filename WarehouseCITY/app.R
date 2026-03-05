@@ -15,8 +15,8 @@ library(markdown)
 library(shinycssloaders)
 library(bslib)
 
-deploy_date <- 'June 13, 2025'
-version <- 'Warehouse CITY v1.23, last updated'
+deploy_date <- 'March 5, 2026'
+version <- 'Warehouse CITY v1.24, last updated'
 sf_use_s2(FALSE)
 ## Define UI for application that displays warehouses
 # Show app name and logos
@@ -94,7 +94,7 @@ ui <- fluidPage(
                   min = 1, max = 5, step = 0.01, width = '200px'),
                 numericInput(inputId = 'Jobs', label = 'Jobs per acre', value = 8,
                    min = 4, max = 20, step = 1, width = '200px'),
-                numericInput(inputId = 'VacancyRate', label = 'Vacancy rate (%)', value = 4.9,
+                numericInput(inputId = 'VacancyRate', label = 'Vacancy rate (%)', value = 5.7,
                   min = 0, max = 15, step = 0.1, width = '200px')
             ),
             hr(),
@@ -166,11 +166,11 @@ output$map <- renderLeaflet({
       addMapPane('Rule 2305 Violators', zIndex = 415) |> 
       hideGroup(c('Rail', 'CalEnviroScreen', 'Size bins', 
                   'Rule 2305 Violators')) |> 
-      addCircleMarkers(data = lat_longs_geocodio,
-                       color = 'cyan',
-                       label = ~paste(name, addr),
-                       weight = 1,
-                       group = 'Rule 2305 Violators')  |>
+      #addCircleMarkers(data = lat_longs_geocodio,
+      #                 color = 'cyan',
+      #                 label = ~paste(name, addr),
+      #                 weight = 1,
+      #                 group = 'Rule 2305 Violators')  |>
       addPolygons(data = warehouses_NOV,
                   color = 'darkblue',
                   weight = 1,
@@ -195,18 +195,17 @@ output$map <- renderLeaflet({
 #Circle select
 observe({
   req(circle_click$mapClick)
-  
   leafletProxy("map", data = circle())  |> 
-  #  clearShapes(group = 'Circle')  |>
     clearGroup(group = 'Circle')  |>
     addPolygons(color = 'grey50',
                 group = 'Circle')
-  })
+})
 #Remove circle
+##FIXME
 observeEvent(input$Reset,   
-  {leafletProxy("map", data = circle(l))  |>
-    clearGroup(group = 'Circle')
-  }
+             {leafletProxy("map", data = circle())  |>
+                 clearGroup(group = 'Circle')
+             }
 )
 
 #City boundaries
@@ -279,7 +278,7 @@ output$warehouseDF <- DT::renderDT(
     pageLength = 10,
     buttons = list( 
       list(extend = 'csv', filename = paste('Warehouse_List', sep='-')),
-      list(extend = 'excel', filename =  paste("Warehouse_List", sep = "-")))),
+      list(extend = 'excel', title = NULL, filename =  paste("Warehouse_List", sep = "-")))),
   extensions = c('Buttons'),
   filter = list(position = 'top', clear = FALSE)
 )
@@ -472,7 +471,7 @@ output$Summary <- renderDT(
       options = list(dom = 'Bt',
                  buttons = list( 
                    list(extend = 'csv', filename = paste('SummaryStats', sep='-')),
-                   list(extend = 'excel', filename =  paste("SummaryStats", sep = "-")))),
+                   list(extend = 'excel', title = NULL, filename =  paste("SummaryStats", sep = "-")))),
       extensions = c('Buttons')
     )  |>
     formatRound(columns = c(2:5, 7, 9),

@@ -260,6 +260,8 @@ rm(ls = assembly2, senate2)
 ##Include analysis of WAIRE NoV rules
 source('WAIRE_NOV.R')
 
+rm(ls = OddCentroidsBuilt)
+
 setwd(app_dir)
 save.image('.RData')
 setwd(warehouse_dir)

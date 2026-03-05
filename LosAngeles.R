@@ -3,7 +3,7 @@
 ##Inspired by Graham Brady and Susan Phillips at Pitzer College and their code
 ##located here: https://docs.google.com/document/d/16Op4GgmK0A_0mUHAf9qqXzT_aekbdLb_ZFtBaZKfj6w/edit
 ##First created May, 2022
-##Last modified  July, 2023
+##Last modified  March, 2026
 ##This script preprocesses LA shapefile data because it is very slow and 
 ##this is intended to avoid having to do it multiple times since it only updates quarterly
 ##Also now removes duplicate location APN parcels (~893 APNs)

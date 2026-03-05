@@ -2,17 +2,20 @@
 ##Created by Mike McCarthy, Radical Research LLC
 ##San Bernardino County Data Import and Processing Steps
 ##First created July, 2023
-##Last modified September, 2024
+##Last modified March 2026
 
 library(tidyverse)
 library(sf)
 
 SBD_dir <- paste0(warehouse_dir, '/SBD_Parcel')
 ## Data from https://open.sbcounty.gov/datasets/countywide-parcels/about
-## Not SBCoPolygons!
+## Not updated since June 2025 - 
+## Redacted info on addresses of politicians?
 ## Read and import property record files for San Bernardino County
 sf::st_layers(dsn = SBD_dir)
-SBD_parcels <- sf::st_read(dsn=SBD_dir, quiet = TRUE, type = 3)
+##FIXME - only geojson file available in 3/26
+SBD_parcels <- sf::st_read(dsn=str_c(warehouse_dir, '/SBCounty_Parcels.geojson'), quiet = TRUE, type = 3) |> 
+  mutate(TYPEUSE2 = as.numeric(TYPEUSE))# |> 
 #class(st_geometry(SBD_parcels))
 
 ##parse SBD data codes
@@ -20,7 +23,8 @@ setwd(warehouse_dir)
 SBD_codes <- readxl::read_excel('Assessor Use Codes 05-21-2012.xls') |>
   janitor::clean_names() |>
   mutate(description = str_to_lower(description),
-         use_code = as.numeric(use_code)) |>
+         use_code = as.numeric(use_code)
+         ) |>
   mutate(type = case_when(
     str_detect(description, 'warehouse') ~ 'warehouse',
     str_detect(description, 'light industrial') ~'other',
@@ -38,12 +42,14 @@ SBD_codes <- readxl::read_excel('Assessor Use Codes 05-21-2012.xls') |>
 
 ##Filter SBDCO data by warehouse and light industrial, filter by size threshold
 ##Fix coordinate projection
-SBD_warehouse_ltInd <- inner_join(SBD_parcels, SBD_codes, by = c('TYPEUSE' = 'use_code' )) |>
-  mutate(threshold_maybeWH = ifelse(SHAPE_AREA > sq_ft_threshold_maybeWH, 1,0)) |>
+SBD_warehouse_ltInd <- SBD_parcels |> 
+ # mutate(TYPEUSE2 = as.numeric(TYPEUSE)) |> 
+    inner_join(SBD_codes, by = c('TYPEUSE2' = 'use_code' )) |>
+  mutate(threshold_maybeWH = ifelse(Shape__Area > sq_ft_threshold_maybeWH, 1,0)) |>
   mutate(exclude = ifelse(type == 'warehouse', 0,
                           ifelse(threshold_maybeWH == 1, 0, 1))) |>
   filter(exclude == 0) |>
-  st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84") |>
+  st_transform(crs = 4326) |>
   mutate(type = as.factor(type))
 
 partialParcels <- c('111804107', '111804108', '111804109', '111804110',
@@ -71,8 +77,8 @@ partialParcels <- c('111804107', '111804108', '111804109', '111804110',
 SBD_warehouse_2 <- SBD_parcels |> 
   filter(APN %in% partialParcels) |> 
   st_transform(crs = 4326) |>
-  left_join(SBD_codes, by = c('TYPEUSE' = 'use_code' )) |> 
-  mutate(threshold_maybeWH = ifelse(SHAPE_AREA > sq_ft_threshold_maybeWH, 1,0)) |>
+  left_join(SBD_codes, by = c('TYPEUSE2' = 'use_code' )) |> 
+  mutate(threshold_maybeWH = ifelse(Shape__Area > sq_ft_threshold_maybeWH, 1,0)) |>
   mutate(exclude = ifelse(type == 'warehouse', 0,
                           ifelse(threshold_maybeWH == 1, 0, 1))) |>
   mutate(type = as.factor(type))
@@ -88,8 +94,14 @@ SBD_warehouse_2 <- SBD_parcels |>
 ## select key columns
 narrow_SBDCo_parcels <- SBD_warehouse_ltInd |>
   bind_rows(SBD_warehouse_2) |> 
-  mutate(year_built = BASE_YEAR) |>
-  dplyr::select(APN, SHAPE_AREA, class, type, geometry, year_built) |>
+  mutate(const_yr = as.numeric(CONST_YEAR),
+         eff_yr = as.numeric(EFF_YEAR)) |>
+  mutate(year_built = case_when(
+    const_yr > 1900 ~ const_yr,
+    BASE_YEAR > 1900 ~ BASE_YEAR,
+    eff_yr > 1900 ~ eff_yr
+  )) |>
+  dplyr::select(APN, Shape__Area, class, type, geometry, year_built) |>
   janitor::clean_names() |>
   mutate(county = 'San Bernardino')
 
