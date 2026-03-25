@@ -99,7 +99,8 @@ narrow_SBDCo_parcels <- SBD_warehouse_ltInd |>
   mutate(year_built = case_when(
     const_yr > 1900 ~ const_yr,
     BASE_YEAR > 1900 ~ BASE_YEAR,
-    eff_yr > 1900 ~ eff_yr
+    eff_yr > 1900 ~ eff_yr,
+    .default = 1980
   )) |>
   dplyr::select(APN, Shape__Area, class, type, geometry, year_built) |>
   janitor::clean_names() |>
