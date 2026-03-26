@@ -15,8 +15,8 @@ library(markdown)
 library(shinycssloaders)
 library(bslib)
 
-deploy_date <- 'March 5, 2026'
-version <- 'Warehouse CITY v1.24, last updated'
+deploy_date <- 'March 25, 2026'
+version <- 'Warehouse CITY v1.24a, last updated'
 sf_use_s2(FALSE)
 ## Define UI for application that displays warehouses
 # Show app name and logos
