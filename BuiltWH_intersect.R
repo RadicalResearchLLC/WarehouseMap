@@ -5,12 +5,10 @@ library(leaflet)
 recently_builtWH <- final_parcels |> 
   filter(year_built > 2016)
 
-earlier_projects <- plannedWarehouses |> 
-  filter(recvd_date <= mdy('1/1/2023')) |> 
-  st_centroid()
-
-earlier_projects2 <- plannedWarehouses |> 
-  filter(recvd_date <= mdy('1/1/2023')) 
+earlier_projects <- plannedWarehouses #|> 
+##FIXME - recv'd date is most recent date and may indicate projects with recent updates
+  #filter(recvd_date <= mdy('1/1/2024')) #|> 
+  #st_centroid()
 
 check_wh_list <- st_intersection(recently_builtWH, earlier_projects) #|> 
   #st_set_geometry(value = NULL) 
@@ -18,14 +16,24 @@ check_wh_list <- st_intersection(recently_builtWH, earlier_projects) #|>
 check_wh_list2 <- st_intersection(recently_builtWH, earlier_projects2)
 
 check_wh_list3 <- check_wh_list2 |> 
-  st_set_geometry(value = NULL) |> 
+  st_set_geometry(value = NULL)  |> 
   select(sch_number)
 
-difference <- check_wh_list3 |> 
-  select(sch_number) |> 
-  anti_join(check_wh_list) |> 
-  left_join(check_wh_list2) |> 
-  st_as_sf()
+area_of_intersection <- check_wh_list |>
+  st_set_geometry(value = NULL) |> 
+  group_by(sch_number) |> 
+  summarize(count = n(), areaBuilt = sum(shape_area2),
+            totalParcel = median(parcel_area), .groups = 'drop') |> 
+  mutate(built_area = round(areaBuilt/totalParcel, 2))
+
+belowHalf <- area_of_intersection |> 
+  filter(built_area < 0.4)
+
+alreadyBuilt <- area_of_intersection |> 
+  filter(built_area >= 0.4)
+
+
+
 
 #recently_builtIntersect <- recently_builtWH |> 
 #  st_filter(check_wh_list) 
@@ -43,7 +51,7 @@ leaflet() |>
               fillOpacity = 0.2,
               label = ~year_built
   ) |> 
-  addPolygons(data = earlier_projects2,
+  addPolygons(data = earlier_projects,
               color = 'orange',
               fillOpacity = 0.2,
               label = ~sch_number) |> 
@@ -51,8 +59,8 @@ leaflet() |>
               color = 'red',
               weight = 1,
               fillOpacity = 0.2,
-              label = ~sch_number) |> 
-  addMarkers(data = check_wh_list)
+              label = ~sch_number) #|> 
+ # addMarkers(data = check_wh_list)
 
 ## check for non-centroid parcels
 leaflet() |> 
@@ -85,7 +93,7 @@ approved_built_since2022 <- check_wh_list |>
 ## Anti-join the built warehouses
 
 planned_notBuilt <- plannedWarehouses |> 
-  anti_join(approved_built_since2022) 
+  anti_join(alreadyBuilt) 
 
 ## Add filter list for specific projects that are built out more than 50%
 ## FIXME
@@ -106,7 +114,7 @@ leaflet() |>
   addProviderTiles(providers$Esri.WorldImagery, group = 'Imagery') |> 
   addLayersControl(baseGroups = c('Basemap', 'Imagery')) |> 
   addPolygons(data = recently_builtWH,
-              color = 'darkred',
+              color = 'blue',
               fillOpacity = 0.2,
               weight = 1) |> 
   addPolygons(data = planned_tidy,
@@ -120,8 +128,8 @@ rm(ls = planned_notBuilt, approved_built_since2022,
    recently_builtWH, recently_builtIntersect,
    earlier_projects2, difference, check_wh_list3)
 
-
-
+rm(ls = alreadyBuilt, area_of_intersection, belowHalf)
+rm(ls = OddCentroidsBuilt)
 #leaflet() |> 
   #addPolygons(data = planned_tidy,
     #          weight = 2, 

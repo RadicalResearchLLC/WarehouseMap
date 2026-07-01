@@ -75,10 +75,16 @@ OC_addresses_4_geocoding <- addresses |>
   filter(county == 'Orange County') |> 
   mutate(lat = NA, long = NA) |> 
   mutate(address = str_replace(list3, ' CA', ', CA')) |> 
+  #FIXME - manual fixes
+  mutate(address = case_when
+         (address == '833NElmSt Orange, CA 92867' ~ '833 N Elm St Orange, CA 92867',
+          address == '3508S Raymond Ave Fullerton, CA 92831' ~ '3508 S Raymond Ave Fullerton, CA 92831',
+          address == '6018S Acacia Ave Fullerton, CA 92831' ~ '6018 S Acacia Ave Fullerton, CA 92831',
+          address == '3330S Harbor Santa Ana, CA 92704' ~ '3330 S Harbor Santa Ana, CA 92704',
+          TRUE ~ address)) |> 
   select(6, 2:3)
 
 nrow(OC_addresses_4_geocoding)
-
 
 #Geocodio appears to do the best job
 lat_longs_geocodio <- OC_addresses_4_geocoding |> 
@@ -121,7 +127,7 @@ rm(OC_parcels_all, OC_parcels_narrow)
 
 lat_lngs_sf <- lat_longs_geocodio |> 
   st_as_sf(coords = c('long', 'lat'), crs = 4326) |> 
-  filter(accuracy_type == 'rooftop')  
+  filter(accuracy > 0.9)  
 
 sf_use_s2(FALSE)
 OC_warehouse_polygons1 <- lat_lngs_sf |>
@@ -133,7 +139,6 @@ OC_warehouse_polygons1 <- lat_lngs_sf |>
 
 OC_wh <- OC_warehouse_polygons1 |> 
   select(address, zip, county, size, geometry)
-
 
 lu_codes <- c('1231', '1323', '1340', '1310')
 OC_SCAG <- sf::st_read(dsn = paste0(wd, '/Warehouse_data/OC_parcels')) |> 
@@ -206,6 +211,7 @@ narrow_OC_parcels <- OC_warehouses |>
   mutate(exclude = ifelse(type == 'warehouse', 0,
                           ifelse(threshold == 1, 0, 1))) |>
   filter(exclude == 0) |>
+  filter(shape_area > 0) |> 
   rename(apn = address) |> 
   select(apn, shape_area, class, type, geometry, year_built, county) #|>
 

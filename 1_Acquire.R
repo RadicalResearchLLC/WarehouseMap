@@ -54,6 +54,7 @@ source('Riverside.R')
 source('SanBernardino.R')
 #source('LosAngeles.R')
 #source('Orange.R')
+
 narrow_OC_parcels <- sf::st_read('OC_whFixed.geojson') |> 
   select(-address2) |> 
   select(apn, shape_area, class, type, built_year, geometry, county) |> 
@@ -170,7 +171,7 @@ source('BuiltWH_intersect.R')
 
 planned_final <- planned_tidy |> 
   select(-row) |> 
-  mutate(floorSpace.sq.ft = 0.55*shape_area,
+  mutate(floorSpace.sq.ft = 0.47*shape_area,
          year_built = ifelse(document_type_bins == 'Approved',
                              2027, 2030)
          ) |>
@@ -272,6 +273,6 @@ st_write(combo_final, 'finalParcels.shp', append = FALSE)
 #st_write(planned_final, 'plannedParcels.shp', append = FALSE)
 
 setwd(wd)
-
+ 
 
 

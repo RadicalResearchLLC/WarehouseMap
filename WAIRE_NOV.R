@@ -115,13 +115,6 @@ NOV_buffer_70m <- lat_longs_geocodio |>
 #poorAccuracy_buffer <- NOV_buffer_70m |> 
 #  filter(accuracy <0.8)
 
-leaflet() |> 
-  addTiles() |> 
-  addPolygons(data= poorAccuracy_buffer,
-              fillOpacity = 0.1,
-              label = ~company,
-              color = 'red')
-
 warehouses_NOV <- combo_final |>
   filter(category == 'Existing') |> 
   filter(shape_area > 80000) |> 
